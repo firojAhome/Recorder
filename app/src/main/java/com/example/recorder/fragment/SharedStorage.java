@@ -7,30 +7,28 @@ import android.preference.PreferenceManager;
 public class SharedStorage {
 
     private static  int PREFS_INDEX = 111;
-    private static  String RADIO_GROUP = null ;
-
 
     private Context context;
-
+    private static SharedPreferences prefSetting;
+    private static SharedPreferences.Editor prefEditor;
+    public static final int PREFERENCE_MODE_PRIVATE = 0;
+    public static final String MY_UNIQE_PREF_FILE = "DrawIt";
 
     public SharedStorage(Context context) {
         this.context = context;
     }
 
-
-
-
-    public static boolean radioGroupIsSelected(String key, Boolean value, Context context){
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putBoolean(key,value);
-        return true;
-    }
-    public static boolean getRadioButton(String key, Context context){
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getBoolean(key,false);
-    }
-
+//    public void saveRadioIndex(int index) {
+//        prefSetting = context.getSharedPreferences(MY_UNIQE_PREF_FILE,PREFERENCE_MODE_PRIVATE);
+//        prefEditor = prefSetting.edit();
+//        prefEditor.putInt("keyIndex", index);
+//    }
+//
+//    public static int getSaveIndex(Context ctx){
+//        prefSetting = ctx.getSharedPreferences(MY_UNIQE_PREF_FILE,PREFERENCE_MODE_PRIVATE);
+//        int index = prefSetting.getInt("keyIndex",10);
+//        return index;
+//    }
 
 
     //worked
@@ -47,6 +45,17 @@ public class SharedStorage {
         return sharedPreferences.getInt(key, 012);
     }
 
+    public static void setDropBoxToken(String key, String value, Context context){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(key,value);
+        editor.commit();
+    }
+
+    public static String getDropBoxToken(String key, Context context){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return sharedPreferences.getString(key, null);
+    }
 
 
 

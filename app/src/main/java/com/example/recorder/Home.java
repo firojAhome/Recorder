@@ -1,7 +1,6 @@
 package com.example.recorder;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
@@ -11,29 +10,27 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.media.MediaRecorder;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.preference.PreferenceManager;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
-import android.widget.RadioGroup;
 import android.widget.Toast;
 
-import com.dropbox.core.v1.DbxEntry;
+import com.example.recorder.callEvent.PhoneStateReceiver;
 import com.example.recorder.drop.DropboxClient;
-import com.example.recorder.drop.URI_to_Path;
 import com.example.recorder.drop.UploadTask;
-import com.example.recorder.fragment.AudioRecording;
 import com.example.recorder.fragment.DriveServiceHelper;
 import com.example.recorder.fragment.Setting;
-import com.example.recorder.fragment.SharedStorage;
+import com.example.recorder.storage.Variable;
+import com.example.recorder.storage.Preferences;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -42,39 +39,29 @@ import com.google.android.material.navigation.NavigationView;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.UUID;
+import java.util.List;
+import java.util.Objects;
 
-import static com.example.recorder.drop.URI_to_Path.getPath;
-import static com.google.api.client.googleapis.testing.auth.oauth2.MockGoogleCredential.ACCESS_TOKEN;
+import static com.example.recorder.storage.Preferences.getStorage;
 
 
-public class Home extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class Home extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
 
     DrawerLayout drawerLayout;
     NavigationView navigationView;
     Toolbar toolbar;
     SwitchCompat switchCompat;
 
-    Button start, stop;
-
-    MediaRecorder recorder;
-    private static String fileName = null;
-    static final String TAG = "MediaRecording";
     //audio
     private static final String LOG_TAG = "AudioRecordTest";
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
-
     private boolean permissionToRecordAccepted = false;
-    private String[] permissions = {Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+    private String[] permissions = {Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.READ_PHONE_STATE,Manifest.permission.READ_EXTERNAL_STORAGE};
 
 
     //drive service helper
     DriveServiceHelper driveServiceHelper;
-
-
-//    drop
-    private String ACCESS_TOKEN;
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -101,64 +88,6 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         toolbar = findViewById(R.id.toolbar);
 
         switchCompat = findViewById(R.id.switchButton);
-        start = findViewById(R.id.startRecording);
-        stop = findViewById(R.id.stopRecording);
-
-        recorder = new MediaRecorder();
-        start.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                start.setVisibility(View.INVISIBLE);
-                try {
-                    String Path = "/sdcard/records/";
-                    String fileName;
-//                    fileName = getExternalCacheDir().getAbsolutePath();
-//                    fileName += "/audiorecordtest.3gp";
-                    fileName = Environment.getExternalStorageDirectory().getAbsolutePath() + "/"
-                            + UUID.randomUUID().toString() + "audio.3gp";
-
-                    recorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
-                    recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-                    java.io.File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-//                    File file = new File(path,fileName);
-                    String file = path + "/record.mp3";
-                    recorder.setOutputFile(file);
-                    recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-                    uploadAudioInDrive(file);
-                    //drop box
-                    storeInDropBox(file);
-                    recorder.prepare();
-                    recorder.start();
-
-                    switch (SharedStorage.getPrefsIndex("radioIndex",getApplicationContext())){
-                        case 0:
-                            uploadAudioInDrive(fileName);
-                            break;
-
-                        case 1:
-                            storeInDropBox(fileName);
-                            break;
-                        case 2:
-                            recorder.setOutputFile(path.getAbsolutePath() + "/rec.mp3");
-                            break;
-                        default:
-                            break;
-                    }
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-        stop.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                recorder.stop();
-                start.setVisibility(View.VISIBLE);
-            }
-        });
 
         setSupportActionBar(toolbar);
 
@@ -169,13 +98,11 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         navigationView.setNavigationItemSelectedListener(this);
         navigationView.setCheckedItem(R.id.nav_first_fragment);
 
-        recorder = new MediaRecorder();
 
-//        if (switchCompat.isChecked() && RADIO_GROUP.booleanValue() == true) {
-//            startRecording();
-//        } else {
-//            stopRecording();
-//        }
+        String prefToken = getStorage(this,"preferenceToken");
+        Log.e(LOG_TAG," token"+ prefToken);
+
+
 
 //shared preference
         SharedPreferences sharedPreferences = getSharedPreferences("save", MODE_PRIVATE);
@@ -187,15 +114,15 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
                 if (switchCompat.isChecked()) {
                     SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
                     editor.putBoolean("value", true);
+                    Toast.makeText(Home.this, "Call recording Start!!!", Toast.LENGTH_SHORT).show();
                     editor.apply();
-                    checkedRadioButton();
-
 
                 } else {
                     //unchecked
                     SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
                     editor.putBoolean("value", false);
                     switchCompat.setChecked(false);
+                    Toast.makeText(Home.this, "Call recording off!!!", Toast.LENGTH_SHORT).show();
                     editor.apply();
 
                 }
@@ -203,6 +130,11 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
             }
         });
 
+        if(switchCompat.isChecked()){
+            TelephonyManager tManager = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
+            myPhoneStateChangeListener listener = new myPhoneStateChangeListener();
+            tManager.listen(listener, PhoneStateListener.LISTEN_CALL_STATE);
+        }
 
     }
 
@@ -213,7 +145,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
 
 //        String filePath = "filepath to get audio";
        try {
-            driveServiceHelper.createAudioFile(fileName).addOnSuccessListener(new OnSuccessListener<String>() {
+            driveServiceHelper.createAudioFile(new File(fileName)).addOnSuccessListener(new OnSuccessListener<String>() {
                 @Override
                 public void onSuccess(String s) {
 
@@ -231,11 +163,10 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
     }
 
 
-    //drop box
     private String retrieveAccessToken() {
         //check if ACCESS_TOKEN is previously stored on previous app launches
-        SharedPreferences prefs = getSharedPreferences("dropAccessToken", Context.MODE_PRIVATE);
-        String accessToken = prefs.getString("access-token", null);
+        SharedPreferences prefs = getSharedPreferences(Variable.pref_name, Context.MODE_PRIVATE);
+        String accessToken = prefs.getString(Variable.Drop_Access_Token, null);
         if (accessToken == null) {
             Log.d("AccessToken Status", "No token found");
             return null;
@@ -246,38 +177,21 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         }
     }
 
+    public void storeInDropBox(String file) {
 
-    private void storeInDropBox(String file) {
-        ACCESS_TOKEN = retrieveAccessToken();
-        if (ACCESS_TOKEN == null)return;
-        new UploadTask(DropboxClient.getClient(ACCESS_TOKEN), new File(file),getApplicationContext()).execute();
-    }
-
-
-
-
-//    private void stopRecording() {
-//        Intent stop = new Intent(getApplicationContext(), AudioRecording.class);
-//        Toast.makeText(this, "stop Recording", Toast.LENGTH_SHORT).show();
-//
-//        stopService(stop);
-//    }
-//
-//    private void startRecording() {
-//        Intent start = new Intent(getApplicationContext(), AudioRecording.class);
-//        Toast.makeText(this, "stop Recording", Toast.LENGTH_SHORT).show();
-//        startService(start);
-//    }
-
-
-    private void checkedRadioButton() {
-        Boolean radioButton = SharedStorage.getRadioButton("radioButton",getApplicationContext());
-
-        if (radioButton.booleanValue() == false){
-            Intent i  = new Intent(this,Setting.class);
-            startActivity(i);
+        String prefToken = getStorage(this,"preferenceToken");
+        Log.e(LOG_TAG," token"+ prefToken);
+        if (prefToken == null){
+            return;
         }
+
+        if (file != null){
+            new UploadTask(DropboxClient.getClient(prefToken), new File(file),getApplicationContext()).execute();
+            Log.e(LOG_TAG,"file");
+        }
+
     }
+
 
 
     @Override
@@ -305,6 +219,35 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         return true;
     }
 
+
+    public void storeInServer() {
+
+        switch (Variable.sharedPreferences.getInt(String.valueOf(Variable.index_ID),111)){
+            case 0:
+
+                break;
+            case 1:
+
+                break;
+            case 2:
+
+                break;
+            default:
+                break;
+        }
+
+    }
+
+    public class myPhoneStateChangeListener extends PhoneStateListener {
+        @Override
+        public void onCallStateChanged(int state, String incomingNumber) {
+            super.onCallStateChanged(state, incomingNumber);
+
+            Intent start = new Intent(Home.this,PhoneStateReceiver.class);
+            startService(start);
+
+        }
+    }
 
 }
 

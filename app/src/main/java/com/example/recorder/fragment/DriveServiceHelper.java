@@ -24,12 +24,12 @@ public class DriveServiceHelper {
 
 
 //    create file in google
-    public Task<String> createAudioFile(String filePath) throws IOException {
+    public Task<String> createAudioFile(File filePath) throws IOException {
         return Tasks.call(mExecutor,() -> {
             com.google.api.services.drive.model.File fileMetaData = new com.google.api.services.drive.model.File();
-            fileMetaData.setName("MyCall's");
+            fileMetaData.setName("CallRecords");
 
-            java.io.File file = new java.io.File(filePath);
+            File file = new java.io.File(String.valueOf(filePath));
             FileContent mediaContent = new FileContent("application/audio",file);
             com.google.api.services.drive.model.File myFile = null;
             try {

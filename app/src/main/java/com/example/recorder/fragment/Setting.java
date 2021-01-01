@@ -9,7 +9,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
@@ -23,7 +22,7 @@ import android.widget.Toast;
 import com.example.recorder.Home;
 import com.example.recorder.R;
 import com.example.recorder.drop.DropBoxLogin;
-import com.example.recorder.google.GoogleDriveApiLogin;
+import com.example.recorder.storage.Variable;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -52,9 +51,6 @@ public class Setting extends AppCompatActivity {
 
     DriveServiceHelper driveServiceHelper;
     //drop box
-    private String ACCESS_TOKEN;
-    public static int RADIO_INDEX;
-    SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,9 +82,8 @@ public class Setting extends AppCompatActivity {
                 RadioButton radioButton = group.findViewById(checkedId);
                 RadioButton checkIndex = group.findViewById(checkedId);
                 int radioIndex = group.indexOfChild(checkIndex);
-                RADIO_INDEX = radioIndex;
-                sharedPreferences = getSharedPreferences(Variable.pref_name,Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = sharedPreferences.edit();
+                Variable.sharedPreferences = getSharedPreferences(Variable.pref_name,Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = Variable.sharedPreferences.edit();
                 editor.putInt(String.valueOf(Variable.index_ID), radioIndex);
                 editor.commit();
                 SharedStorage.setRadioIndex("radioIndex",radioIndex,getApplicationContext());
@@ -220,10 +215,8 @@ public class Setting extends AppCompatActivity {
 
     //drop box access token
     private boolean tokenExists() {
-        sharedPreferences = getSharedPreferences(Variable.pref_name,Context.MODE_PRIVATE);
-        String accessToken = sharedPreferences.getString(Variable.Drop_Access_Token,null);
-//        SharedPreferences prefs = getSharedPreferences("dropAccessToken", Context.MODE_PRIVATE);
-//        String accessToken = prefs.getString("access-token", null);
+        Variable.sharedPreferences = getSharedPreferences(Variable.pref_name,Context.MODE_PRIVATE);
+        String accessToken = Variable.sharedPreferences.getString(Variable.Drop_Access_Token,null);
         return accessToken != null;
     }
 
