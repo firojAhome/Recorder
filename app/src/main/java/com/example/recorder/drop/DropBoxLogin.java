@@ -3,7 +3,6 @@ package com.example.recorder.drop;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -13,7 +12,6 @@ import android.widget.Button;
 import com.dropbox.core.android.Auth;
 import com.example.recorder.Home;
 import com.example.recorder.R;
-import com.example.recorder.storage.Variable;
 import com.example.recorder.storage.Preferences;
 
 public class DropBoxLogin extends AppCompatActivity {
@@ -55,15 +53,9 @@ public class DropBoxLogin extends AppCompatActivity {
 
     public void getAccessToken() {
         String accessToken = Auth.getOAuth2Token(); //generate Access Token
-        Variable.staticToken = accessToken;
         if (accessToken != null) {
             //Store accessToken in SharedPreferences
-            sharedPreferences = getSharedPreferences(Variable.pref_name,Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString(Variable.Drop_Access_Token, accessToken);
-            editor.commit();
-            Preferences.setToStorage(this,"preferenceToken",accessToken);
-
+            Preferences.setToStorage(this,"prefreToken",accessToken);
             //Proceed to MainActivity
             Intent intent = new Intent(DropBoxLogin.this, Home.class);
             startActivity(intent);

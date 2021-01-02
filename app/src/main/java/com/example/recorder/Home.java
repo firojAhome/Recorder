@@ -10,12 +10,10 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import android.Manifest;
-import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
@@ -29,7 +27,6 @@ import com.example.recorder.drop.DropboxClient;
 import com.example.recorder.drop.UploadTask;
 import com.example.recorder.fragment.DriveServiceHelper;
 import com.example.recorder.fragment.Setting;
-import com.example.recorder.storage.Variable;
 import com.example.recorder.storage.Preferences;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -39,10 +36,6 @@ import com.google.android.material.navigation.NavigationView;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-
-import static com.example.recorder.storage.Preferences.getStorage;
 
 
 public class Home extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
@@ -61,6 +54,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
 
 
     //drive service helper
+    public static Context contextOfApplication;
     DriveServiceHelper driveServiceHelper;
 
     @Override
@@ -80,14 +74,16 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
-
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
 
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
         toolbar = findViewById(R.id.toolbar);
-
         switchCompat = findViewById(R.id.switchButton);
+
+        //shared preference to access non activity class
+        contextOfApplication = getApplicationContext();
+
 
         setSupportActionBar(toolbar);
 
@@ -98,10 +94,9 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         navigationView.setNavigationItemSelectedListener(this);
         navigationView.setCheckedItem(R.id.nav_first_fragment);
 
-
-        String prefToken = getStorage(this,"preferenceToken");
-        Log.e(LOG_TAG," token"+ prefToken);
-
+        int radio = Preferences.getRadioIndex(this,"radioIndex");
+        String prefToken = Preferences.getPreferences(this,"prefreToken");
+        Log.e(LOG_TAG," radio Id:"+ radio);
 
 
 //shared preference
@@ -124,6 +119,8 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
                     switchCompat.setChecked(false);
                     Toast.makeText(Home.this, "Call recording off!!!", Toast.LENGTH_SHORT).show();
                     editor.apply();
+                    Intent intent = new Intent(getApplicationContext(), PhoneStateReceiver.class);
+                    stopService(intent);
 
                 }
 
@@ -131,13 +128,16 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         });
 
         if(switchCompat.isChecked()){
-            TelephonyManager tManager = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
-            myPhoneStateChangeListener listener = new myPhoneStateChangeListener();
-            tManager.listen(listener, PhoneStateListener.LISTEN_CALL_STATE);
+            Intent intent = new Intent(getApplicationContext(), PhoneStateReceiver.class);
+            startService(intent);
+
         }
 
     }
 
+    public static Context getContextOfApplication(){
+        return contextOfApplication;
+    }
 
     //upload data in drive
     public void uploadAudioInDrive(String fileName){
@@ -163,30 +163,15 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
     }
 
 
-    private String retrieveAccessToken() {
-        //check if ACCESS_TOKEN is previously stored on previous app launches
-        SharedPreferences prefs = getSharedPreferences(Variable.pref_name, Context.MODE_PRIVATE);
-        String accessToken = prefs.getString(Variable.Drop_Access_Token, null);
-        if (accessToken == null) {
-            Log.d("AccessToken Status", "No token found");
-            return null;
-        } else {
-            //accessToken already exists
-            Log.d("AccessToken Status", "Token exists");
-            return accessToken;
-        }
-    }
+    public void storeInDropBox(String absolutePath, String prefToken) {
 
-    public void storeInDropBox(String file) {
+        Log.e(LOG_TAG,"Phone_recever_Token"+prefToken);
 
-        String prefToken = getStorage(this,"preferenceToken");
-        Log.e(LOG_TAG," token"+ prefToken);
         if (prefToken == null){
             return;
         }
-
-        if (file != null){
-            new UploadTask(DropboxClient.getClient(prefToken), new File(file),getApplicationContext()).execute();
+        if (absolutePath != null){
+            new UploadTask(DropboxClient.getClient(prefToken), new File(absolutePath),Home.this).execute();
             Log.e(LOG_TAG,"file");
         }
 
@@ -220,34 +205,16 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
     }
 
 
-    public void storeInServer() {
-
-        switch (Variable.sharedPreferences.getInt(String.valueOf(Variable.index_ID),111)){
-            case 0:
-
-                break;
-            case 1:
-
-                break;
-            case 2:
-
-                break;
-            default:
-                break;
-        }
-
-    }
-
-    public class myPhoneStateChangeListener extends PhoneStateListener {
-        @Override
-        public void onCallStateChanged(int state, String incomingNumber) {
-            super.onCallStateChanged(state, incomingNumber);
-
-            Intent start = new Intent(Home.this,PhoneStateReceiver.class);
-            startService(start);
-
-        }
-    }
+//    public class myPhoneStateChangeListener extends PhoneStateListener {
+//        @Override
+//        public void onCallStateChanged(int state, String incomingNumber) {
+//            super.onCallStateChanged(state, incomingNumber);
+//
+//            Intent start = new Intent(Home.this,PhoneStateReceiver.class);
+//            startService(start);
+//
+//        }
+//    }
 
 }
 

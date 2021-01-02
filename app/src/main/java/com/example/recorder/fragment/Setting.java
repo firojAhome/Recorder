@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -22,7 +21,7 @@ import android.widget.Toast;
 import com.example.recorder.Home;
 import com.example.recorder.R;
 import com.example.recorder.drop.DropBoxLogin;
-import com.example.recorder.storage.Variable;
+import com.example.recorder.storage.Preferences;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -42,15 +41,14 @@ public class Setting extends AppCompatActivity {
 
     private static final int REQUEST_CODE_SIGN_IN = 1;
     public static String TAG = "Setting";
-    public String MyPreference = "Radio_Button";
+
     RadioGroup radioGroup;
-    //    RadioButton google,drop,local;
     Toolbar toolbar;
     Button button;
     LinearLayout linearLayout;
 
     DriveServiceHelper driveServiceHelper;
-    //drop box
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,9 +62,6 @@ public class Setting extends AppCompatActivity {
         linearLayout = findViewById(R.id.linear_setting);
 
 
-        Update();
-
-
 
         setSupportActionBar(toolbar);
         // add back arrow to toolbar
@@ -75,19 +70,15 @@ public class Setting extends AppCompatActivity {
             getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
 
-
+        RadioButton radioButton = (RadioButton) radioGroup.getChildAt(Preferences.getRadioIndex(this,"radioIndex"));
+        radioButton.setChecked(true);
         radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 RadioButton radioButton = group.findViewById(checkedId);
                 RadioButton checkIndex = group.findViewById(checkedId);
                 int radioIndex = group.indexOfChild(checkIndex);
-                Variable.sharedPreferences = getSharedPreferences(Variable.pref_name,Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = Variable.sharedPreferences.edit();
-                editor.putInt(String.valueOf(Variable.index_ID), radioIndex);
-                editor.commit();
-                SharedStorage.setRadioIndex("radioIndex",radioIndex,getApplicationContext());
-                SaveInSharedPreference(MyPreference, radioIndex);
+                Preferences.setRadioIndex(getApplicationContext(),"radioIndex",radioIndex);
                 CheckedPermission();
                 
             }
@@ -107,6 +98,7 @@ public class Setting extends AppCompatActivity {
 
     }
 
+
     private void CheckedPermission() {
         switch (radioGroup.getCheckedRadioButtonId()) {
             case R.id.google:
@@ -115,8 +107,6 @@ public class Setting extends AppCompatActivity {
                     Toast.makeText(this, "Google", Toast.LENGTH_SHORT).show();
                 }
                 requestSignIn();
-
-
                 break;
 
             case R.id.drop_box:
@@ -198,25 +188,9 @@ public class Setting extends AppCompatActivity {
     }
 
 
-    private void SaveInSharedPreference(String key, int value) {
-        SharedPreferences sharedPreferences = getSharedPreferences(MyPreference, MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putInt(key, value);
-        editor.apply();
-    }
-
-    private void Update() {
-        SharedPreferences sharedPreferences = getSharedPreferences(MyPreference, MODE_PRIVATE);
-        int savedRadio = sharedPreferences.getInt(MyPreference, 2);
-        RadioButton savedRadioButton = (RadioButton) radioGroup.getChildAt(savedRadio);
-        savedRadioButton.setChecked(true);
-        return;
-    }
-
     //drop box access token
     private boolean tokenExists() {
-        Variable.sharedPreferences = getSharedPreferences(Variable.pref_name,Context.MODE_PRIVATE);
-        String accessToken = Variable.sharedPreferences.getString(Variable.Drop_Access_Token,null);
+        String accessToken = Preferences.getPreferences(this,"prefreToken");
         return accessToken != null;
     }
 

@@ -8,14 +8,21 @@ import android.content.IntentFilter;
 import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
+import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import com.example.recorder.Home;
+import com.example.recorder.storage.Preferences;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,12 +30,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
 @RequiresApi(api = Build.VERSION_CODES.O)
-public class PhoneStateReceiver extends Service {
+public class PhoneStateReceiver extends Service{
+
+    private Looper serviceLooper;
+    private ServiceHandler serviceHandler;
+    TelephonyManager telephonyManager;
+    private final Handler mHandler = new Handler();
+
+    Home home = new Home();
+    Context applicationContext = Home.getContextOfApplication();
 
     private static final String TAG = "PhoneStateReceiver";
     private MediaRecorder recorder = null;
@@ -37,12 +53,29 @@ public class PhoneStateReceiver extends Service {
     private static final String ACTION_IN = "android.intent.action.PHONE_STATE";
     private static final String ACTION_OUT = "android.intent.action.NEW_OUTGOING_CALL";
 
-//    Date dirDate = new java.util.Date(System.currentTimeMillis());
-//    String baseDir = "/CallRecords";
-//    String newDir = createDateBasedDirectory(baseDir, dirDate);
+
 
     public PhoneStateReceiver() {
     }
+
+
+    private final class ServiceHandler extends Handler {
+
+        public ServiceHandler(@NonNull Looper looper) {
+            super(looper);
+        }
+
+        public void handleMessage(int msg) {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            stopSelf();
+        }
+
+    }
+
 
     @Nullable
     @Override
@@ -52,11 +85,13 @@ public class PhoneStateReceiver extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+
         final IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_OUT);
         filter.addAction(ACTION_IN);
-        this.registerReceiver(new CallReceiver(), filter);
-        return super.onStartCommand(intent, flags, startId);
+        this.registerReceiver(new CallReceiver(), filter,null,mHandler);
+
+        return START_STICKY;
     }
 
 
@@ -66,10 +101,10 @@ public class PhoneStateReceiver extends Service {
         if (!sampleDir.exists()) {
             sampleDir.mkdirs();
         }
-        DateFormat df = DateFormat.getDateInstance(DateFormat.LONG, Locale.FRANCE);
-        String file_name = number + "-"+ date;
+        String out = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
+        String file_name = number +"  "+ out;
         try {
-            audiofile = File.createTempFile(file_name, ".mp3", sampleDir);
+            audiofile = File.createTempFile(file_name, ".amr", sampleDir);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -79,9 +114,7 @@ public class PhoneStateReceiver extends Service {
         recorder.setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION);
         recorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-
         recorder.setOutputFile(audiofile.getAbsolutePath());
-
         try {
             recorder.prepare();
             recorder.start();
@@ -100,17 +133,31 @@ public class PhoneStateReceiver extends Service {
         if (recordstarted) {
             try{
                 recorder.stop();
-                recorder.reset();
-                recorder.release();
-                recorder = null;
             }catch (IllegalStateException e){
                 e.printStackTrace();
             }
             recordstarted = false;
         }
 
-        Home home = new Home();
-        home.storeInDropBox(audiofile.getAbsolutePath());
+        shareInStorage();
+
+    }
+
+    private void shareInStorage() {
+        String prefToken = Preferences.getPreferences(applicationContext,"prefreToken");
+        switch (Preferences.getRadioIndex(getApplicationContext(),"radioIndex")){
+            case 0:
+                break;
+            case 1:
+                home.storeInDropBox(audiofile.getAbsolutePath(),prefToken);
+                break;
+            case 2:
+
+                break;
+            default:
+                break;
+
+        }
     }
 
     public abstract class PhoneCallService extends BroadcastReceiver {
@@ -132,10 +179,16 @@ public class PhoneStateReceiver extends Service {
                 int state = 0;
                 if (stateStr.equals(TelephonyManager.EXTRA_STATE_IDLE)) {
                     state = TelephonyManager.CALL_STATE_IDLE;
+                    Log.e("looper","looper event");
+
                 } else if (stateStr.equals(TelephonyManager.EXTRA_STATE_OFFHOOK)) {
                     state = TelephonyManager.CALL_STATE_OFFHOOK;
+                    Log.e("looper","looper event");
+
                 } else if (stateStr.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
                     state = TelephonyManager.CALL_STATE_RINGING;
+                    Log.e("looper","looper event");
+
                 }
 
                 onCallStateChanged(context, state, savedNumber);
@@ -151,6 +204,7 @@ public class PhoneStateReceiver extends Service {
             }
             switch (state) {
                 case TelephonyManager.CALL_STATE_RINGING:
+                    String dateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
                     isIncoming = true;
                     callStartTime = new Date();
                     savedNumber = number;
@@ -164,6 +218,7 @@ public class PhoneStateReceiver extends Service {
                         isIncoming = false;
                         callStartTime = new Date();
                         onOutgoingCallStarted(context, savedNumber, callStartTime);
+                        Log.e("phone state","ON backgoround");
                         startRecording(savedNumber, callStartTime);
 
                         }
@@ -206,26 +261,22 @@ public class PhoneStateReceiver extends Service {
         @Override
         protected void onIncomingCallReceived(Context ctx, String number, Date start) {
             Log.d("onIncomingCallReceived", number + " " + start.toString());
-
         }
 
 
         @Override
         protected void onIncomingCallEnded(Context ctx, String number, Date start, Date end) {
             Log.d("onIncomingCallEnded", number + " " + start.toString() + "\t" + end.toString());
-
         }
 
         @Override
         protected void onOutgoingCallStarted(Context ctx, String number, Date start) {
             Log.d("onOutgoingCallStarted", number + " " + start.toString());
-
         }
 
         @Override
         protected void onOutgoingCallEnded(Context ctx, String number, Date start, Date end) {
             Log.d("onOutgoingCallEnded", number + " " + start.toString() + "\t" + end.toString());
-
         }
 
         @Override
@@ -240,6 +291,13 @@ public class PhoneStateReceiver extends Service {
         if (recordstarted == false){
             super.unregisterReceiver(receiver);
         }
+    }
+
+
+    @Override
+    public void onDestroy() {
+        telephonyManager.listen(null, PhoneStateListener.LISTEN_NONE);
+        super.onDestroy();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -279,4 +337,16 @@ public class PhoneStateReceiver extends Service {
 
         return newDir;
     }
+
+    public class myPhoneStateChangeListener extends PhoneStateListener {
+        @Override
+        public void onCallStateChanged(int state, String incomingNumber) {
+            super.onCallStateChanged(state, incomingNumber);
+
+            Intent start = new Intent(getApplicationContext(),PhoneStateReceiver.class);
+            startService(start);
+
+        }
+    }
+
 }
