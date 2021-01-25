@@ -18,7 +18,7 @@ public class DropBoxLogin extends AppCompatActivity {
 
     Button dropLogin;
     Toolbar dropToolbar;
-    SharedPreferences sharedPreferences;
+
 
 
     @Override

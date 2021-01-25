@@ -16,5 +16,8 @@
     <string name="APP_KEY">zdsm97h628ogspg</string>
     <string name="APP_SECRET">fqy575op5lkuueq</string>
 
+    <!--  google drive  server client id-->
+    <string name="server_client_id">783739385158-i417tfp3770v7ks7vnb7766jjn484j6g.apps.googleusercontent.com</string>
+    <string name="web_client_id">783739385158-hc8raf86gis8rc8koqa7bloa9g429j0a.apps.googleusercontent.com</string>
 
 </resources>

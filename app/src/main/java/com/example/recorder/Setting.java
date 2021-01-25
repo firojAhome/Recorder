@@ -1,15 +1,11 @@
-package com.example.recorder.fragment;
+package com.example.recorder;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
-import android.app.Activity;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -18,37 +14,17 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 
-import com.example.recorder.Home;
-import com.example.recorder.R;
 import com.example.recorder.drop.DropBoxLogin;
+import com.example.recorder.google.GoogleDriveLogin;
+import com.example.recorder.google.GoogleDriveService;
 import com.example.recorder.storage.Preferences;
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.Scope;
-import com.google.android.gms.tasks.Task;
-import com.google.api.client.extensions.android.http.AndroidHttp;
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
-import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.services.drive.Drive;
-import com.google.api.services.drive.DriveScopes;
-
-import java.util.Collections;
 
 public class Setting extends AppCompatActivity {
-
-    private static final int REQUEST_CODE_SIGN_IN = 1;
-    public static String TAG = "Setting";
 
     RadioGroup radioGroup;
     Toolbar toolbar;
     Button button;
     LinearLayout linearLayout;
-
-    DriveServiceHelper driveServiceHelper;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,11 +78,9 @@ public class Setting extends AppCompatActivity {
     private void CheckedPermission() {
         switch (radioGroup.getCheckedRadioButtonId()) {
             case R.id.google:
-                GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getApplicationContext());
-                if(acct != null){
-                    Toast.makeText(this, "Google", Toast.LENGTH_SHORT).show();
-                }
-                requestSignIn();
+                Intent i = new Intent(this, GoogleDriveLogin.class);
+                startActivity(i);
+                Toast.makeText(this, "Google drive login!", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.drop_box:
@@ -129,64 +103,6 @@ public class Setting extends AppCompatActivity {
                 break;
         }
     }
-
-    private void requestSignIn() {
-
-        GoogleSignInOptions signInOptions =
-                new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                        .requestEmail()
-                        .requestScopes(new Scope(DriveScopes.DRIVE_FILE))
-                        .build();
-        GoogleSignInClient client = GoogleSignIn.getClient(getApplicationContext(), signInOptions);
-
-        // The result of the sign-in Intent is handled in onActivityResult.
-        startActivityForResult(client.getSignInIntent(), REQUEST_CODE_SIGN_IN);
-    }
-
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        switch (requestCode){
-            case REQUEST_CODE_SIGN_IN:
-                if (resultCode == Activity.RESULT_OK && data != null) {
-                    Toast.makeText(this, "Google drive signIn successful", Toast.LENGTH_SHORT).show();
-                    Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
-                    handleSignInResult(task);
-                }
-
-                break;
-        }
-    }
-
-        private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
-        try {
-            GoogleSignInAccount account = completedTask.getResult(ApiException.class);
-
-            GoogleAccountCredential credential = GoogleAccountCredential.usingOAuth2(this, Collections.singleton((DriveScopes.DRIVE)));
-            credential.setSelectedAccountName(account.getDisplayName());
-
-            Drive googleDriveService =
-                    new Drive.Builder(
-                            AndroidHttp.newCompatibleTransport(),
-                            new GsonFactory(),
-                            credential)
-                            .setApplicationName("Recorder")
-                            .build();
-
-            Intent i = new Intent(this,Home.class);
-            startActivity(i);
-            finish();
-
-        } catch (ApiException e) {
-            // The ApiException status code indicates the detailed failure reason.
-            Log.w(TAG, "signInResult:failed code=" + e.getStatusCode());
-
-        }
-
-    }
-
 
     //drop box access token
     private boolean tokenExists() {

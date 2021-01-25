@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.recorder">
 
-    <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -15,8 +15,7 @@
         android:name="android.permission.READ_PHONE_STATE"
         android:maxSdkVersion="29" />
     <uses-permission android:name="android.permissions.READ_PHONE_NUMBERS" />
-    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:allowBackup="true"
@@ -25,9 +24,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Recorder">
-        <activity android:name=".google.GoogleDriveApiLogin"></activity>
+        <activity android:name=".google.GoogleDriveLogin"></activity>
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyARwx1HYrg3TxQHmJkxjGwTu1UekKOs14w" />
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
         <activity android:name=".drop.DropBoxLogin" />
-        <activity android:name=".fragment.Setting" />
+        <activity android:name=".Setting" />
         <activity android:name=".Home" />
         <activity android:name=".MainActivity">
             <intent-filter>
@@ -49,6 +56,8 @@
 
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="android.intent.action.MAIN" />
             </intent-filter>
         </activity>
 
@@ -56,13 +65,15 @@
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
 
-        <service android:name=".callEvent.PhoneStateReceiver"
-            android:foregroundServiceType="microphone"
+        <service
+            android:name=".callEvent.PhoneStateReceiver"
             android:enabled="true"
-            android:exported="true">
-
+            android:exported="true"
+            android:foregroundServiceType="microphone">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
+            </intent-filter>
         </service>
-
     </application>
 
 </manifest>

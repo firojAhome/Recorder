@@ -55,4 +55,15 @@ public class Preferences {
         return sharedPreferences.getInt(keyValue, 0);
     }
 
+    public static void setGoogleAccestoken(Context context, String key, String value){
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString(key, value);
+        editor.apply();
+    }
+
+    public static String getDriveToken(Context context, String keyValue){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return sharedPreferences.getString(keyValue, "");
+    }
 }

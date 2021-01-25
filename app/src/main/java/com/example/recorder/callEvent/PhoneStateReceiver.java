@@ -1,5 +1,7 @@
 package com.example.recorder.callEvent;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -9,20 +11,23 @@ import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationCompat;
 
 import com.example.recorder.Home;
+import com.example.recorder.google.GoogleDriveLogin;
+import com.example.recorder.google.GoogleDriveService;
 import com.example.recorder.storage.Preferences;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,14 +35,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
+
+import static com.example.recorder.callEvent.App.CHANNEL_ID;
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 public class PhoneStateReceiver extends Service{
 
+    GoogleDriveLogin googleDriveLogin = new GoogleDriveLogin();
     private Looper serviceLooper;
     private ServiceHandler serviceHandler;
     TelephonyManager telephonyManager;
@@ -49,33 +55,50 @@ public class PhoneStateReceiver extends Service{
     private static final String TAG = "PhoneStateReceiver";
     private MediaRecorder recorder = null;
     private File audiofile;
+    String callNumber;
     private boolean recordstarted = false;
     private static final String ACTION_IN = "android.intent.action.PHONE_STATE";
     private static final String ACTION_OUT = "android.intent.action.NEW_OUTGOING_CALL";
-
-
-
-    public PhoneStateReceiver() {
-    }
 
 
     private final class ServiceHandler extends Handler {
 
         public ServiceHandler(@NonNull Looper looper) {
             super(looper);
+
         }
 
-        public void handleMessage(int msg) {
+        public void handleMessage(Message msg) {
+            int time = 5;
+            for (int i=0; i<time; i++){
+                Log.v("timer", "i value = "+i);
+            }
             try {
                 Thread.sleep(5000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            stopSelf();
+
         }
 
     }
 
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        IntentFilter intentToReceiveFilter = new IntentFilter();
+        intentToReceiveFilter.addAction(ACTION_IN);
+        intentToReceiveFilter.addAction(ACTION_OUT);
+        this.registerReceiver(new CallReceiver(), intentToReceiveFilter, null,
+                mHandler);
+
+        Thread aThread = new Thread(String.valueOf(this));
+        aThread.start();
+
+        serviceLooper = mHandler.getLooper();
+        serviceHandler = new ServiceHandler(serviceLooper);
+    }
 
     @Nullable
     @Override
@@ -85,26 +108,36 @@ public class PhoneStateReceiver extends Service{
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+         super.onStartCommand(intent, flags, startId);
 
-        final IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_OUT);
-        filter.addAction(ACTION_IN);
-        this.registerReceiver(new CallReceiver(), filter,null,mHandler);
+//         String input = intent.getStringExtra("input extrat");
+
+        Intent notificationIntent = new Intent(this,Home.class);
+         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+
+         Notification notification = new NotificationCompat.Builder(this,CHANNEL_ID)
+                .setContentTitle("Foreground Service")
+                .setContentIntent(pendingIntent)
+                .build();
+         startForeground(1, notification);
 
         return START_STICKY;
     }
 
 
+
     private void startRecording(String number, Date date) {
 
+        callNumber = number;
         File sampleDir = new File(Environment.getExternalStorageDirectory(), "/CallRecords");
         if (!sampleDir.exists()) {
             sampleDir.mkdirs();
         }
         String out = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
         String file_name = number +"  "+ out;
+        String extension = ".amr";
         try {
-            audiofile = File.createTempFile(file_name, ".amr", sampleDir);
+            audiofile = File.createTempFile(file_name,".amr" , sampleDir);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -139,14 +172,19 @@ public class PhoneStateReceiver extends Service{
             recordstarted = false;
         }
 
-        shareInStorage();
-
+        if(audiofile.getAbsolutePath() != null){
+            shareInStorage();
+        }
     }
 
     private void shareInStorage() {
         String prefToken = Preferences.getPreferences(applicationContext,"prefreToken");
         switch (Preferences.getRadioIndex(getApplicationContext(),"radioIndex")){
             case 0:
+
+                googleDriveLogin.saveFile(callNumber,audiofile.getAbsolutePath());
+//                GoogleDriveLogin googleDriveLogin = new GoogleDriveLogin();
+//                googleDriveLogin.saveFile(audiofile.getAbsolutePath());
                 break;
             case 1:
                 home.storeInDropBox(audiofile.getAbsolutePath(),prefToken);
@@ -167,8 +205,7 @@ public class PhoneStateReceiver extends Service{
         private String savedNumber;
 
         @Override
-        public void onReceive(Context context, Intent intent) {
-
+        public void onReceive(Context context, Intent intent)   {
             //We listen to two intents.  The new outgoing call only tells us of an outgoing call.  We use it to get the number.
             if (intent.getAction().equals("android.intent.action.NEW_OUTGOING_CALL")) {
                 savedNumber = intent.getExtras().getString("android.intent.extra.PHONE_NUMBER");
@@ -197,7 +234,6 @@ public class PhoneStateReceiver extends Service{
 
 
         private void onCallStateChanged(Context context, int state, String number) {
-
             if(lastState == state){
                 //No change, debounce extras
                 return;
@@ -218,7 +254,6 @@ public class PhoneStateReceiver extends Service{
                         isIncoming = false;
                         callStartTime = new Date();
                         onOutgoingCallStarted(context, savedNumber, callStartTime);
-                        Log.e("phone state","ON backgoround");
                         startRecording(savedNumber, callStartTime);
 
                         }
@@ -286,17 +321,11 @@ public class PhoneStateReceiver extends Service{
 
     }
 
-    @Override
-    public void unregisterReceiver(BroadcastReceiver receiver) {
-        if (recordstarted == false){
-            super.unregisterReceiver(receiver);
-        }
-    }
 
 
     @Override
     public void onDestroy() {
-        telephonyManager.listen(null, PhoneStateListener.LISTEN_NONE);
+        unregisterReceiver(new CallReceiver());
         super.onDestroy();
     }
 
@@ -338,15 +367,5 @@ public class PhoneStateReceiver extends Service{
         return newDir;
     }
 
-    public class myPhoneStateChangeListener extends PhoneStateListener {
-        @Override
-        public void onCallStateChanged(int state, String incomingNumber) {
-            super.onCallStateChanged(state, incomingNumber);
-
-            Intent start = new Intent(getApplicationContext(),PhoneStateReceiver.class);
-            startService(start);
-
-        }
-    }
 
 }

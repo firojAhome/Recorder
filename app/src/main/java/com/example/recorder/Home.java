@@ -12,11 +12,10 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.telephony.PhoneStateListener;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -25,8 +24,6 @@ import android.widget.Toast;
 import com.example.recorder.callEvent.PhoneStateReceiver;
 import com.example.recorder.drop.DropboxClient;
 import com.example.recorder.drop.UploadTask;
-import com.example.recorder.fragment.DriveServiceHelper;
-import com.example.recorder.fragment.Setting;
 import com.example.recorder.storage.Preferences;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -38,13 +35,14 @@ import java.io.File;
 import java.io.IOException;
 
 
+
 public class Home extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
 
     DrawerLayout drawerLayout;
     NavigationView navigationView;
     Toolbar toolbar;
     SwitchCompat switchCompat;
-
+    private IntentFilter mIntentFilter;
     //audio
     private static final String LOG_TAG = "AudioRecordTest";
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
@@ -55,7 +53,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
 
     //drive service helper
     public static Context contextOfApplication;
-    DriveServiceHelper driveServiceHelper;
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -68,7 +66,6 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         if (!permissionToRecordAccepted) finish();
 
     }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,6 +80,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
 
         //shared preference to access non activity class
         contextOfApplication = getApplicationContext();
+
 
 
         setSupportActionBar(toolbar);
@@ -119,8 +117,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
                     switchCompat.setChecked(false);
                     Toast.makeText(Home.this, "Call recording off!!!", Toast.LENGTH_SHORT).show();
                     editor.apply();
-                    Intent intent = new Intent(getApplicationContext(), PhoneStateReceiver.class);
-                    stopService(intent);
+                    stopService();
 
                 }
 
@@ -128,9 +125,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         });
 
         if(switchCompat.isChecked()){
-            Intent intent = new Intent(getApplicationContext(), PhoneStateReceiver.class);
-            startService(intent);
-
+            startService();
         }
 
     }
@@ -139,28 +134,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         return contextOfApplication;
     }
 
-    //upload data in drive
-    public void uploadAudioInDrive(String fileName){
-        GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(getApplicationContext());
 
-//        String filePath = "filepath to get audio";
-       try {
-            driveServiceHelper.createAudioFile(new File(fileName)).addOnSuccessListener(new OnSuccessListener<String>() {
-                @Override
-                public void onSuccess(String s) {
-
-                    Toast.makeText(Home.this, "Upload Successful", Toast.LENGTH_SHORT).show();
-                }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception e) {
-                    Toast.makeText(Home.this, "Error to upload!", Toast.LENGTH_SHORT).show();
-                }
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
 
     public void storeInDropBox(String absolutePath, String prefToken) {
@@ -204,18 +178,42 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         return true;
     }
 
-
-//    public class myPhoneStateChangeListener extends PhoneStateListener {
-//        @Override
-//        public void onCallStateChanged(int state, String incomingNumber) {
-//            super.onCallStateChanged(state, incomingNumber);
-//
-//            Intent start = new Intent(Home.this,PhoneStateReceiver.class);
-//            startService(start);
-//
-//        }
+//    @Override
+//    protected void onResume() {
+//        unregisterReceiver(testReceiver);
+//        super.onResume();
 //    }
 
+//
+//    private BroadcastReceiver testReceiver = new BroadcastReceiver() {
+//        @RequiresApi(api = Build.VERSION_CODES.O)
+//        @Override
+//        public void onReceive(Context context, Intent intent) {
+////            int resultCode = intent.getIntExtra("resultCode", RESULT_CANCELED);
+//            String state = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
+//           if (state.equals(TelephonyManager.EXTRA_STATE_IDLE)){
+//               //call idle
+//               Log.v("timer", "i value = "+state);
+//               startService();
+//           }if (state.equals(TelephonyManager.EXTRA_STATE_OFFHOOK)){
+//                Log.v("timer", "i value = "+state);
+//                startService();
+//            }if (state.equals(TelephonyManager.EXTRA_STATE_RINGING)){
+//                Log.v("timer", "i value = "+state);
+//                startService();
+//            }
+//        }
+//    };
+
+
+    public void startService(){
+        Intent intent = new Intent(this,PhoneStateReceiver.class);
+        startService(intent);
+    }
+    public void stopService(){
+        Intent intent = new Intent(this, PhoneStateReceiver.class);
+        stopService(intent);
+    }
 }
 
 
