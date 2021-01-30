@@ -1,19 +1,15 @@
 package com.example.recorder.storage;
 
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningTaskInfo;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.preference.PreferenceManager;
-import android.widget.RadioGroup;
 
-import java.util.List;
-import java.util.Objects;
+import com.example.recorder.Home;
 
-import static android.content.Context.MODE_PRIVATE;
+import java.util.Date;
 
 public class Preferences {
+
 
     Context context;
 
@@ -55,15 +51,43 @@ public class Preferences {
         return sharedPreferences.getInt(keyValue, 0);
     }
 
-    public static void setGoogleAccestoken(Context context, String key, String value){
+
+    public static void setDrviefolderId(Context context, String key, String value){
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor editor = settings.edit();
         editor.putString(key, value);
         editor.apply();
     }
 
-    public static String getDriveToken(Context context, String keyValue){
+    public static String getDriveFolderId(Context context, String keyValue){
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         return sharedPreferences.getString(keyValue, "");
     }
+
+    public static void setSubFolderDate(Context context, String key, String value){
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString(key, value);
+        editor.apply();
+    }
+
+    public static String getSubFolderDate(Context context, String keyValue){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return sharedPreferences.getString(keyValue, "");
+    }
+
+
+    public static void setDrvieSubFolderId(Context context, String key, String value){
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString(key, value);
+        editor.apply();
+    }
+
+    public static String getDriveSubFolderId(Context context, String keyValue){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return sharedPreferences.getString(keyValue, "");
+    }
+    
+
 }

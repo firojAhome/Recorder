@@ -42,7 +42,7 @@ import static com.example.recorder.callEvent.App.CHANNEL_ID;
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 public class PhoneStateReceiver extends Service{
-
+    GoogleDriveService googleDriveService;
     GoogleDriveLogin googleDriveLogin = new GoogleDriveLogin();
     private Looper serviceLooper;
     private ServiceHandler serviceHandler;
@@ -81,6 +81,11 @@ public class PhoneStateReceiver extends Service{
 
         }
 
+    }
+
+    @Override
+    public void unregisterReceiver(BroadcastReceiver receiver) {
+        super.unregisterReceiver(receiver);
     }
 
     @Override
@@ -128,16 +133,20 @@ public class PhoneStateReceiver extends Service{
 
     private void startRecording(String number, Date date) {
 
-        callNumber = number;
+        String fileDate = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
+        File dateDir = new File(Environment.getExternalStorageDirectory(),"/CallRecords/"+fileDate);
         File sampleDir = new File(Environment.getExternalStorageDirectory(), "/CallRecords");
         if (!sampleDir.exists()) {
             sampleDir.mkdirs();
+        } if (!dateDir.exists()){
+            dateDir.mkdir();
         }
+
         String out = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
         String file_name = number +"  "+ out;
         String extension = ".amr";
         try {
-            audiofile = File.createTempFile(file_name,".amr" , sampleDir);
+            audiofile = File.createTempFile(file_name,".amr" , dateDir);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -182,9 +191,10 @@ public class PhoneStateReceiver extends Service{
         switch (Preferences.getRadioIndex(getApplicationContext(),"radioIndex")){
             case 0:
 
-                googleDriveLogin.saveFile(callNumber,audiofile.getAbsolutePath());
-//                GoogleDriveLogin googleDriveLogin = new GoogleDriveLogin();
-//                googleDriveLogin.saveFile(audiofile.getAbsolutePath());
+                googleDriveLogin.checkDrivePermission(getApplicationContext(),audiofile.getAbsolutePath());
+               // googleDriveService.createFolder("check");
+//                googleDriveLogin.checkDriveStoragePermission(getApplicationContext(),audiofile.getAbsolutePath());
+
                 break;
             case 1:
                 home.storeInDropBox(audiofile.getAbsolutePath(),prefToken);
@@ -320,7 +330,6 @@ public class PhoneStateReceiver extends Service{
         }
 
     }
-
 
 
     @Override

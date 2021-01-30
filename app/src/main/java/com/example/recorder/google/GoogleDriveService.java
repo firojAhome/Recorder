@@ -1,12 +1,15 @@
 package com.example.recorder.google;
 
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.OpenableColumns;
 import android.util.Pair;
 
+import com.example.recorder.Home;
+import com.example.recorder.storage.Preferences;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.api.client.http.ByteArrayContent;
@@ -19,13 +22,15 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class GoogleDriveService {
 
-
+    Context context;
     private final Executor mExecutor = Executors.newSingleThreadExecutor();
     private final Drive mDriveService;
 
@@ -49,17 +54,42 @@ public class GoogleDriveService {
                     .execute();
             System.out.println("Folder ID: " + file.getId());
 
+            Preferences.setDrviefolderId(context,"driveFolder",file.getId());
             return file.getId();
+
         });
 
     }
 
-    public Task<String> createFile() {
+
+// we have to share parent folder id the create
+    public Task<String> createSubFolder(String parentFolderId, String subFolderName) {
+
         return Tasks.call(mExecutor, () -> {
             File metadata = new File()
-                    .setParents(Collections.singletonList("root"))
-                    .setMimeType("audio/mp3")
-                    .setName("Recorder");
+                    .setParents(Collections.singletonList(parentFolderId))
+                    .setMimeType("application/vnd.google-apps.folder")
+                    .setName(subFolderName);
+
+            File googleFile = mDriveService.files().create(metadata).execute();
+            if (googleFile == null) {
+                throw new IOException("Null result when requesting file creation.");
+            }
+
+            Preferences.setDrvieSubFolderId(context,"subFolderId",googleFile.getId());
+            return googleFile.getId();
+
+        });
+    }
+
+
+//is it for create file
+    public Task<String> createFile(String folderId, String file) {
+        return Tasks.call(mExecutor, () -> {
+            File metadata = new File()
+                    .setParents(Collections.singletonList(folderId))
+                    .setMimeType("/.mp3")
+                    .setName(file);
 
             File googleFile = mDriveService.files().create(metadata).execute();
             if (googleFile == null) {
@@ -70,10 +100,6 @@ public class GoogleDriveService {
         });
     }
 
-    /**
-     * Opens the file identified by {@code fileId} and returns a {@link Pair} of its name and
-     * contents.
-     */
 
     public Task<Pair<String, String>> readFile(String fileId) {
         return Tasks.call(mExecutor, () -> {
@@ -84,8 +110,8 @@ public class GoogleDriveService {
             // Stream the file contents to a String.
             try (InputStream is = mDriveService.files().get(fileId).executeMediaAsInputStream();
                  BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
-                StringBuilder stringBuilder = new StringBuilder();
-                String line;
+                 StringBuilder stringBuilder = new StringBuilder();
+                 String line;
 
                 while ((line = reader.readLine()) != null) {
                     stringBuilder.append(line);
@@ -116,23 +142,13 @@ public class GoogleDriveService {
         });
     }
 
-    /**
-     * Returns a {@link FileList} containing all the visible files in the user's My Drive.
-     *
-     * <p>The returned list will only contain files visible to this app, i.e. those which were
-     * created by this app. To perform operations on files not created by the app, the project must
-     * request Drive Full Scope in the <a href="https://play.google.com/apps/publish">Google
-     * Developer's Console</a> and be submitted to Google for verification.</p>
-     */
 
     public Task<FileList> queryFiles() {
         return Tasks.call(mExecutor, () ->
                 mDriveService.files().list().setSpaces("drive").execute());
     }
 
-    /**
-     * Returns an {@link Intent} for opening the Storage Access Framework file picker.
-     */
+
 
     public Intent createFilePickerIntent() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -142,10 +158,6 @@ public class GoogleDriveService {
         return intent;
     }
 
-    /**
-     * Opens the file at the {@code uri} returned by a Storage Access Framework {@link Intent}
-     * created by {@link #createFilePickerIntent()} using the given {@code contentResolver}.
-     */
 
     public Task<Pair<String, String>> openFileUsingStorageAccessFramework(
             ContentResolver contentResolver, Uri uri) {
@@ -176,5 +188,8 @@ public class GoogleDriveService {
             return Pair.create(name, content);
         });
     }
+
+
+//    https://github.com/googleworkspace/android-samples/blob/master/drive/deprecation/app/src/main/java/com/google/android/gms/drive/sample/driveapimigration/MainActivity.java
 
 }

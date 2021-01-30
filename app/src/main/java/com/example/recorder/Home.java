@@ -10,6 +10,7 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -24,6 +25,8 @@ import android.widget.Toast;
 import com.example.recorder.callEvent.PhoneStateReceiver;
 import com.example.recorder.drop.DropboxClient;
 import com.example.recorder.drop.UploadTask;
+import com.example.recorder.google.GoogleDriveLogin;
+import com.example.recorder.google.GoogleDriveService;
 import com.example.recorder.storage.Preferences;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -42,7 +45,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
     NavigationView navigationView;
     Toolbar toolbar;
     SwitchCompat switchCompat;
-    private IntentFilter mIntentFilter;
+
     //audio
     private static final String LOG_TAG = "AudioRecordTest";
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
@@ -81,8 +84,6 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         //shared preference to access non activity class
         contextOfApplication = getApplicationContext();
 
-
-
         setSupportActionBar(toolbar);
 
         navigationView.bringToFront();
@@ -94,7 +95,10 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
 
         int radio = Preferences.getRadioIndex(this,"radioIndex");
         String prefToken = Preferences.getPreferences(this,"prefreToken");
-        Log.e(LOG_TAG," radio Id:"+ radio);
+
+        String driveFolderId = Preferences.getDriveFolderId(this,"driveFolder");
+      //  Log.e(LOG_TAG," prefernceFOlderId : "+ driveFolderId);
+
 
 
 //shared preference
@@ -117,7 +121,6 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
                     switchCompat.setChecked(false);
                     Toast.makeText(Home.this, "Call recording off!!!", Toast.LENGTH_SHORT).show();
                     editor.apply();
-                    stopService();
 
                 }
 
@@ -210,10 +213,8 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         Intent intent = new Intent(this,PhoneStateReceiver.class);
         startService(intent);
     }
-    public void stopService(){
-        Intent intent = new Intent(this, PhoneStateReceiver.class);
-        stopService(intent);
-    }
+
+
 }
 
 
