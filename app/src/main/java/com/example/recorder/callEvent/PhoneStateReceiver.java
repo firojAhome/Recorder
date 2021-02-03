@@ -142,6 +142,7 @@ public class PhoneStateReceiver extends Service{
             dateDir.mkdir();
         }
 
+        callNumber = number;
         String out = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
         String file_name = number +"  "+ out;
         String extension = ".amr";
@@ -191,9 +192,7 @@ public class PhoneStateReceiver extends Service{
         switch (Preferences.getRadioIndex(getApplicationContext(),"radioIndex")){
             case 0:
 
-                googleDriveLogin.checkDrivePermission(getApplicationContext(),audiofile.getAbsolutePath());
-               // googleDriveService.createFolder("check");
-//                googleDriveLogin.checkDriveStoragePermission(getApplicationContext(),audiofile.getAbsolutePath());
+                googleDriveLogin.startDriveStorage(applicationContext,callNumber,audiofile.getAbsolutePath());
 
                 break;
             case 1:

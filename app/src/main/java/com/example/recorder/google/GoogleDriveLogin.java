@@ -3,10 +3,12 @@ package com.example.recorder.google;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -15,44 +17,53 @@ import android.widget.Toast;
 
 import com.example.recorder.R;
 import com.example.recorder.storage.Preferences;
-import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.auth.api.signin.GoogleSignInResult;
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.Scopes;
 import com.google.android.gms.common.SignInButton;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.OptionalPendingResult;
-import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Scope;
+import com.google.android.gms.drive.DriveClient;
+import com.google.android.gms.drive.DriveContents;
+import com.google.android.gms.drive.DriveFile;
+import com.google.android.gms.drive.DriveFolder;
+import com.google.android.gms.drive.DriveResourceClient;
+import com.google.android.gms.drive.MetadataChangeSet;
+import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
+import com.google.api.services.people.v1.model.Person;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 
-public class GoogleDriveLogin extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener {
+public class GoogleDriveLogin extends AppCompatActivity{
 
     private static final int RC_SIGN_IN = 1;
-    private static final String TAG = "GoogleDriveLogin" ;
+    private static final String TAG = "GoogleDriveLogin";
     public static final int REQUEST_PERMISSION_TO_UPLOAD = 2;
     SignInButton signInButton;
     GoogleSignInClient mGoogleSignInClient;
     GoogleSignInOptions gso;
-    GoogleApiClient mGoogleApiClient;
 
+    DriveResourceClient mDriveResourceClient;
     GoogleDriveService mGoogleDriveService;
     String serverClientId = "23602232397-2ndsrgt44jqt7dodt20gquonfqm2i4qm.apps.googleusercontent.com";
 
@@ -65,11 +76,11 @@ public class GoogleDriveLogin extends AppCompatActivity implements GoogleApiClie
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_google_drive_login);
 
-        button= findViewById(R.id.button);
+        button = findViewById(R.id.button);
         signInButton = findViewById(R.id.sign_in_button);
-        Log.e("GoogledriveLogin","Activity");
+        Log.e("GoogledriveLogin", "Activity");
 
-        Log.e("Google drive service","0"+mGoogleDriveService );
+        Log.e("Google drive service", "0" + mGoogleDriveService);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -92,16 +103,9 @@ public class GoogleDriveLogin extends AppCompatActivity implements GoogleApiClie
             public void onClick(View v) {
                 Intent signInIntent = mGoogleSignInClient.getSignInIntent();
                 startActivityForResult(signInIntent, RC_SIGN_IN);
-                Log.e("credential result"," "+signInIntent);
+                Log.e("credential result", " " + signInIntent);
             }
         });
-
-//        mGoogleDriveService.createFolder("check111");
-    }
-
-    public void signIn(){
-        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-        this.startActivityForResult(signInIntent, RC_SIGN_IN);
 
     }
 
@@ -130,10 +134,10 @@ public class GoogleDriveLogin extends AppCompatActivity implements GoogleApiClie
 
             case REQUEST_PERMISSION_TO_UPLOAD:
                 if (resultCode == Activity.RESULT_OK && requestCode == REQUEST_PERMISSION_TO_UPLOAD) {
-                    Log.e("signIn result","resul drive "+REQUEST_PERMISSION_TO_UPLOAD);
+                    Log.e("signIn result", "resul drive " + REQUEST_PERMISSION_TO_UPLOAD);
                 }
                 break;
-            }
+        }
 
         super.onActivityResult(requestCode, resultCode, data);
 
@@ -157,10 +161,9 @@ public class GoogleDriveLogin extends AppCompatActivity implements GoogleApiClie
                                     credential)
                                     .setApplicationName("Recorder")
                                     .build();
-//                    com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential@73596e/@ec93af4
 
                     mGoogleDriveService = new GoogleDriveService(googleDriveService);
-                    Log.e("Google drive service",""+mGoogleDriveService );
+
 
                     query();
 
@@ -183,18 +186,19 @@ public class GoogleDriveLogin extends AppCompatActivity implements GoogleApiClie
                             drivList.add(file.getId());
                         }
 
-                        for (int i=0; i<drivList.size(); i++){
+                        for (int i = 0; i < drivList.size(); i++) {
                             String arrayListName = drivList.get(i).toString();
-                            Log.e("name","arraylist name"+arrayListName);
+                            Log.e("name", "arraylist name" + arrayListName);
 
-                            switch (arrayListName){
+                            switch (arrayListName) {
                                 case "Call Recorder":
-                                    Preferences.setDrviefolderId(this,"driveFolderName",drivList.get(i+1).toString());
+                                    Preferences.setDrviefolderId(this, "driveFolderName", drivList.get(i + 1).toString());
+                                    Log.e("check folder name "," "+arrayListName);
                                     break;
                             }
 
                         }
-                        Log.e("builderArray","drivList "+drivList.size());
+                        Log.e("builderArray", "drivList " + drivList.size());
 
                         createFolder();
 
@@ -205,122 +209,87 @@ public class GoogleDriveLogin extends AppCompatActivity implements GoogleApiClie
     }
 
     private void createFolder() {
-        String driveFolderId   = Preferences.getDriveFolderId(this,"driveFolderName");
-        Log.e("driveFOlderID CHECK "," "+driveFolderId);
-        if (mGoogleDriveService != null && driveFolderId == null){
-
+        String driveFolderId = Preferences.getDriveFolderId(this, "driveFolderName");
+        Log.e("driveFOlderID CHECK ", " " + driveFolderId);
+        if (mGoogleDriveService != null){
+            if (driveFolderId == null) {
                 mGoogleDriveService.createFolder("Call Recorder");
-//                mGoogleDriveService.createSubFolder(driveFolderId,formatter.format(date));
 
+            }
+            createSubFolder();
         }
     }
 
     private void createSubFolder() {
-        String driveFolderId   = Preferences.getDriveFolderId(this,"driveFolderName");
+
+        String driveFolderId = Preferences.getDriveFolderId(this, "driveFolderName");
         SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
         Date date = new Date();
         String strDate = formatter.format(date);
         System.out.println(formatter.format(date));
 
-        String prefSaveDate = Preferences.getSubFolderDate(this,"subFolderDate");
-        Log.e("prefDate"," "+prefSaveDate);
-        Log.e("driveFOlderID CHECK "," "+driveFolderId);
+        String prefSaveDate = Preferences.getSubFolderDate(this, "subFolderDate");
+        Log.e("prefDate", " " + prefSaveDate);
+        Log.e("driveFOlderID CHECK ", " " + driveFolderId);
+        Log.e("folder date CHECK ", " " + strDate);
 
-        if (prefSaveDate != strDate){
-            mGoogleDriveService.createSubFolder(driveFolderId,strDate);
-            Preferences.setSubFolderDate(this,"subFolderDate",strDate);
-        }
-    }
-
-
-    public void checkDriveStoragePermission(Context context,String absolutePath){
-
-            String checkSubFolderId = Preferences.getDriveSubFolderId(context,"subFolderId");
-
-            String driveFolderId   = Preferences.getDriveFolderId(context,"driveFolderName");
-            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
-            Date date = new Date();
-            String strDate = formatter.format(date);
-            System.out.println(formatter.format(date));
-
-            String prefSaveDate = Preferences.getSubFolderDate(context,"subFolderDate");
-            Log.e("prefDate"," "+prefSaveDate);
-            Log.e("driveFOlderID CHECK "," "+driveFolderId);
-
-            if (prefSaveDate != strDate){
-                mGoogleDriveService.createSubFolder(driveFolderId,strDate);
-                Preferences.setSubFolderDate(this,"subFolderDate",strDate);
-            }
-            checkSubFolderId = Preferences.getDriveFolderId(context,"driveFolderName");
-            mGoogleDriveService.createFile(checkSubFolderId,absolutePath);
+        if (prefSaveDate != strDate) {
+            mGoogleDriveService.createSubFolder(this,driveFolderId, strDate);
+            Preferences.setSubFolderDate(this, "subFolderDate", strDate);
 
         }
 
-//without check sigIn
-    public void checkDrivePermission(Context context, String absolutePath) {
+    }
 
-        GoogleSignInOptions signInOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestScopes(new Scope(Scopes.DRIVE_FILE))
-                .requestServerAuthCode(serverClientId)
-                .requestEmail()
-                .build();
+    //this authenticate during phone call
 
+    public void startDriveStorage(Context context, String number, String absolutePath) {
 
-        GoogleSignInClient client = GoogleSignIn.getClient(context, signInOptions);
+        if (!GoogleSignIn.hasPermissions(
+                GoogleSignIn.getLastSignedInAccount(context),
+                driveSCOPE)) {
+            GoogleSignIn.requestPermissions(
+                    (Activity) context,
+                    RC_SIGN_IN,
+                    GoogleSignIn.getLastSignedInAccount(context),
+                    driveSCOPE);
 
-        mGoogleSignInClient = GoogleSignIn.getClient(context, signInOptions);
+        } else {
+            GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(context);
 
-        startActivityForResult(client.getSignInIntent(), RC_SIGN_IN);
+                GetContactsTask task = new GetContactsTask(account.getAccount(),context,number,absolutePath);
+                task.execute();
 
-//        OptionalPendingResult<GoogleSignInResult> googleSignInResult = Auth.GoogleSignInApi.silentSignIn(mGoogleApiClient);
-//
-//        if (googleSignInResult.isDone()){
-//            GoogleSignInResult result1 = googleSignInResult.get();
-//            handleSignInResult(result1);
-//        }else {
-//
-//            googleSignInResult.setResultCallback(new ResultCallback<GoogleSignInResult>() {
-//                @Override
-//                public void onResult(GoogleSignInResult googleSignInResult) {
-//                    handleSignInResult(googleSignInResult);
-//                    Log.e("signIn result","callBack");
-//                }
-//            });
-//        }
-//        Task<GoogleSignInAccount> task = client.silentSignIn();
+        }
 
-       // Intent signInIntent = Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient);
-//        GoogleSignInAccount resul = GoogleSignIn.getLastSignedInAccount(context);
-        //GoogleSignInAccount resul = client.silentSignIn().getResult();
-//        startActivityForResult(signInIntent, RC_SIGN_IN);
-
-
-
-        Log.e("credential phonestate"," "+client.getSignInIntent());
-        //startActivityForResult(client.getSignInIntent(),RC_SIGN_IN);
-
-        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(context);
-
-
-
-//                checkDriveStoragePermission(context,absolutePath);
-        Log.e("signIn info","success"+account.getEmail());
 
     }
 
-    private void handleSignInResult(GoogleSignInResult result1) {
-        Log.d(TAG, "handleSignInResult:" + result1.isSuccess());
-        if (result1.isSuccess()) {
-            GoogleSignInAccount acct = result1.getSignInAccount();
-//            GoogleSignIn.getSignedInAccountFromIntent(result1)
-//                    .addOnSuccessListener(googleAccount -> {
-//                        Log.d(TAG, "Signed in as " + googleAccount.getEmail());
 
-            // Use the authenticated account to sign in to the Drive service.
+    private class GetContactsTask extends AsyncTask<Void, Void, List<Person>> {
+
+        Account mAccount;
+        Context phoneContext;
+        String filePath;
+        String phoneNumber;
+
+        public GetContactsTask(Account account, Context context, String absolutePath, String name) {
+            mAccount = account;
+            phoneContext = context;
+            filePath = absolutePath;
+            phoneNumber = name;
+        }
+
+
+        @Override
+        protected List<Person> doInBackground(Void... voids) {
+            List<Person> result = null;
             GoogleAccountCredential credential =
                     GoogleAccountCredential.usingOAuth2(
-                            this, Collections.singleton(DriveScopes.DRIVE_FILE));
-            credential.setSelectedAccount(acct.getAccount());
+                            phoneContext,
+                            Collections.singleton(DriveScopes.DRIVE_FILE));
+            credential.setSelectedAccount(mAccount);
+
             Drive googleDriveService =
                     new Drive.Builder(
                             AndroidHttp.newCompatibleTransport(),
@@ -331,30 +300,37 @@ public class GoogleDriveLogin extends AppCompatActivity implements GoogleApiClie
 //                    com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential@73596e/@ec93af4
 
             mGoogleDriveService = new GoogleDriveService(googleDriveService);
-            Log.e("Google drive service", "" + mGoogleDriveService);
 
-            query();
+            checkDriveStoragePermission(phoneContext,phoneNumber,filePath);
 
-        } else {
-            Log.e("failed","drive authentication");
+            return null;
         }
-
     }
 
+    public void checkDriveStoragePermission(Context context, String phoneNumber, String absolutePath) {
 
+        String driveFolderId = Preferences.getDriveFolderId(context, "driveFolderName");
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+        Date date = new Date();
+            String strDate = formatter.format(date);
+        System.out.println(formatter.format(date));
 
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        Log.e("signIn info","connection Failed");
-    }
-
-    public void requestPermission(Scope driveSCOPE, int requestPermissionToUpload){
-        if (!GoogleSignIn.hasPermissions(
-                GoogleSignIn.getLastSignedInAccount(this), this.driveSCOPE)) {
-            requestPermission(this.driveSCOPE, REQUEST_PERMISSION_TO_UPLOAD);
+        String prefSaveDate = Preferences.getSubFolderDate(context, "subFolderDate");
+        Log.e("prefDate", " " + prefSaveDate);
+        Log.e("driveFOlderID CHECK ", " " + driveFolderId);
+        Log.e("folder date CHECK ", " " + strDate);
+        if (prefSaveDate != strDate) {
+            mGoogleDriveService.createSubFolder(this,driveFolderId, strDate);
+            Preferences.setSubFolderDate(context, "subFolderDate", strDate);
+            Log.e("subFolderDate","subDate "+strDate);
         }
+        String subRootFolderId = Preferences.getDriveSubFolderId(context, "subFolderId");
+
+
+        mGoogleDriveService.uploadFIleInDrive(subRootFolderId,phoneNumber,absolutePath);
 
 
     }
+
 
 }

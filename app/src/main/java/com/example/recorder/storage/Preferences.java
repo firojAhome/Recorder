@@ -61,7 +61,7 @@ public class Preferences {
 
     public static String getDriveFolderId(Context context, String keyValue){
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getString(keyValue, "");
+        return sharedPreferences.getString(keyValue, null);
     }
 
     public static void setSubFolderDate(Context context, String key, String value){
@@ -73,7 +73,7 @@ public class Preferences {
 
     public static String getSubFolderDate(Context context, String keyValue){
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getString(keyValue, "");
+        return sharedPreferences.getString(keyValue, null);
     }
 
 
@@ -86,7 +86,7 @@ public class Preferences {
 
     public static String getDriveSubFolderId(Context context, String keyValue){
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getString(keyValue, "");
+        return sharedPreferences.getString(keyValue, null);
     }
     
 
