@@ -19,10 +19,6 @@ public class Preferences {
     }
 
 
-
-    protected final static String DEFAULT = null;
-    String temp = null;
-
     // work
     public static void setToStorage(Context context, String key, String value) {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
@@ -34,7 +30,7 @@ public class Preferences {
 
     public static String getPreferences(Context context, String keyValue) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getString(keyValue, "");
+        return sharedPreferences.getString(keyValue, null);
     }
 
 
@@ -64,16 +60,16 @@ public class Preferences {
         return sharedPreferences.getString(keyValue, null);
     }
 
-    public static void setSubFolderDate(Context context, String key, String value){
+    public static void setSubFolderDate(Context context, String key, Date value){
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor editor = settings.edit();
-        editor.putString(key, value);
+        editor.putLong(key, value.getDate());
         editor.apply();
     }
 
-    public static String getSubFolderDate(Context context, String keyValue){
+    public static Long getSubFolderDate(Context context, String keyValue){
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getString(keyValue, null);
+        return sharedPreferences.getLong(keyValue, 0);
     }
 
 
@@ -90,4 +86,27 @@ public class Preferences {
     }
     
 
+    public static void checkedDriveButton(Context context, String key, boolean value){
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putBoolean(key, value);
+        editor.apply();
+    }
+
+        public static boolean getDriveButton(Context context, String keyValue){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return sharedPreferences.getBoolean(keyValue, false);
+    }
+
+    public static void setDropboxSubFolderDate(Context context, String key, Date value){
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putLong(key, value.getDate());
+        editor.apply();
+    }
+
+    public static Long getDropboxSubFolderDate(Context context, String keyValue){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return sharedPreferences.getLong(keyValue, 0);
+    }
 }

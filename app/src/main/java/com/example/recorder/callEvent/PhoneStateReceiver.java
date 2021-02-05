@@ -21,20 +21,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.example.recorder.Home;
 import com.example.recorder.google.GoogleDriveLogin;
-import com.example.recorder.google.GoogleDriveService;
 import com.example.recorder.storage.Preferences;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -42,11 +38,10 @@ import static com.example.recorder.callEvent.App.CHANNEL_ID;
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 public class PhoneStateReceiver extends Service{
-    GoogleDriveService googleDriveService;
+
     GoogleDriveLogin googleDriveLogin = new GoogleDriveLogin();
     private Looper serviceLooper;
     private ServiceHandler serviceHandler;
-    TelephonyManager telephonyManager;
     private final Handler mHandler = new Handler();
 
     Home home = new Home();
@@ -59,7 +54,6 @@ public class PhoneStateReceiver extends Service{
     private boolean recordstarted = false;
     private static final String ACTION_IN = "android.intent.action.PHONE_STATE";
     private static final String ACTION_OUT = "android.intent.action.NEW_OUTGOING_CALL";
-
 
     private final class ServiceHandler extends Handler {
 
@@ -83,10 +77,10 @@ public class PhoneStateReceiver extends Service{
 
     }
 
-    @Override
+   /* @Override
     public void unregisterReceiver(BroadcastReceiver receiver) {
         super.unregisterReceiver(receiver);
-    }
+    }*/
 
     @Override
     public void onCreate() {
@@ -130,24 +124,39 @@ public class PhoneStateReceiver extends Service{
     }
 
 
+    public void stopForegroundService() {
+        Log.e("TAG_FOREGROUND_SERVICE", "Stop foreground service.");
+
+        // Stop foreground service and remove the notification.
+//        stopForeground(true);
+
+        // Stop the foreground service.
+        stopSelf();
+    }
 
     private void startRecording(String number, Date date) {
-
+        System.out.print("Thissi dsjkfdjkfdsaffg");
         String fileDate = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
         File dateDir = new File(Environment.getExternalStorageDirectory(),"/CallRecords/"+fileDate);
         File sampleDir = new File(Environment.getExternalStorageDirectory(), "/CallRecords");
         if (!sampleDir.exists()) {
-            sampleDir.mkdirs();
+            sampleDir.mkdir();
         } if (!dateDir.exists()){
             dateDir.mkdir();
         }
 
+//        dir = new File(System.getProperty("java.io.tmpdir"));
         callNumber = number;
         String out = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
-        String file_name = number +"  "+ out;
-        String extension = ".amr";
+        String ext = ".mp3";
+        String file_name = number +" "+ out + ext;
         try {
-            audiofile = File.createTempFile(file_name,".amr" , dateDir);
+            System.out.println("check file name suffix"+file_name);
+            audiofile = File.createTempFile("abc.mp3","");
+            System.out.println(audiofile.getName()+ "\t" + audiofile.getAbsolutePath());
+            File parent = new File(System.getProperty("java.io.tmpdir"));
+
+            Log.e("asoifof","cgeuihirar");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -158,6 +167,7 @@ public class PhoneStateReceiver extends Service{
         recorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
         recorder.setOutputFile(audiofile.getAbsolutePath());
+
         try {
             recorder.prepare();
             recorder.start();
@@ -191,12 +201,13 @@ public class PhoneStateReceiver extends Service{
         String prefToken = Preferences.getPreferences(applicationContext,"prefreToken");
         switch (Preferences.getRadioIndex(getApplicationContext(),"radioIndex")){
             case 0:
-
-                googleDriveLogin.startDriveStorage(applicationContext,callNumber,audiofile.getAbsolutePath());
-
+                GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
+                if (acct != null) {
+                    googleDriveLogin.startDriveStorage(applicationContext,callNumber,audiofile.getAbsolutePath());
+                }
                 break;
             case 1:
-                home.storeInDropBox(audiofile.getAbsolutePath(),prefToken);
+                home.storeInDropBox(applicationContext,callNumber,audiofile.getAbsolutePath(),prefToken);
                 break;
             case 2:
 
@@ -333,47 +344,11 @@ public class PhoneStateReceiver extends Service{
 
     @Override
     public void onDestroy() {
-        unregisterReceiver(new CallReceiver());
+
+        stopForegroundService();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(new CallReceiver());
+//        this.unregisterReceiver(new CallReceiver());
         super.onDestroy();
     }
-
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    public static String createDateBasedDirectory(String baseDirectory, Date argDate) {
-        String newDir = null;
-
-        if (baseDirectory != null && argDate != null) {
-            try {
-                String format = "yyyy-MM-dd";
-                DateFormat dateFormatter = new SimpleDateFormat(format);
-                String date = dateFormatter.format(argDate);
-
-                // check if the directory exists:
-
-                String todaysLogDir = baseDirectory + "\\" + date; // create the path as String
-
-                // then create a Path (java.nio, alternatives possible)
-                Path todaysDirectoryPath = Paths.get(todaysLogDir);
-                // and check if this Path exists
-                if (Files.exists(todaysDirectoryPath)){
-                    // if present, just return it in order to write (into) a log file there
-                    return todaysDirectoryPath.toUri().toString();
-                } else {
-                    newDir = baseDirectory + date;
-                    new File(newDir).mkdir();
-                    // create it the way you want and return the path as String
-
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }else {
-            newDir = baseDirectory + argDate;
-            new File(newDir).mkdir();
-        }
-
-        return newDir;
-    }
-
 
 }

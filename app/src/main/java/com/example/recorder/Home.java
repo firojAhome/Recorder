@@ -1,6 +1,7 @@
 package com.example.recorder;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
@@ -16,6 +17,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
@@ -97,7 +99,6 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         String prefToken = Preferences.getPreferences(this,"prefreToken");
 
         String driveFolderId = Preferences.getDriveFolderId(this,"driveFolder");
-      //  Log.e(LOG_TAG," prefernceFOlderId : "+ driveFolderId);
 
 
 
@@ -106,6 +107,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         switchCompat.setChecked(sharedPreferences.getBoolean("value", false));
 
         switchCompat.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onClick(View v) {
                 if (switchCompat.isChecked()) {
@@ -121,6 +123,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
                     switchCompat.setChecked(false);
                     Toast.makeText(Home.this, "Call recording off!!!", Toast.LENGTH_SHORT).show();
                     editor.apply();
+                    stopService();
 
                 }
 
@@ -128,7 +131,8 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         });
 
         if(switchCompat.isChecked()){
-            startService();
+            Intent intent = new Intent(this,PhoneStateReceiver.class);
+            startService(intent);
         }
 
     }
@@ -140,7 +144,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
 
 
 
-    public void storeInDropBox(String absolutePath, String prefToken) {
+    public void storeInDropBox(Context applicationContext, String number, String absolutePath, String prefToken) {
 
         Log.e(LOG_TAG,"Phone_recever_Token"+prefToken);
 
@@ -148,7 +152,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
             return;
         }
         if (absolutePath != null){
-            new UploadTask(DropboxClient.getClient(prefToken), new File(absolutePath),Home.this).execute();
+            new UploadTask(number,DropboxClient.getClient(prefToken), new File(absolutePath),applicationContext).execute();
             Log.e(LOG_TAG,"file");
         }
 
@@ -209,9 +213,12 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
 //    };
 
 
-    public void startService(){
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public void stopService(){
         Intent intent = new Intent(this,PhoneStateReceiver.class);
-        startService(intent);
+        PhoneStateReceiver phoneStateReceiver = new PhoneStateReceiver();
+        phoneStateReceiver.stopForegroundService();
+        stopService(intent);
     }
 
 

@@ -13,7 +13,9 @@ import android.widget.Toast;
 
 import com.example.recorder.Home;
 import com.example.recorder.storage.Preferences;
+import com.google.android.gms.drive.DriveApi;
 import com.google.android.gms.drive.DriveContents;
+import com.google.android.gms.drive.DriveFolder;
 import com.google.android.gms.drive.MetadataChangeSet;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
@@ -21,6 +23,10 @@ import com.google.api.client.googleapis.media.MediaHttpUploader;
 import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.FileContent;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpHeaders;
+import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.InputStreamContent;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
@@ -97,7 +103,7 @@ public class GoogleDriveService {
                 throw new IOException("Null result when requesting file creation.");
             }
 
-            System.out.println("afafaf"+googleFile.getId());
+            System.out.println("Folder Id "+googleFile.getId());
             Log.e("SERvice java",Preferences.getDriveSubFolderId(context,"subFolderId"));
             return googleFile.getId();
 
@@ -142,12 +148,15 @@ public class GoogleDriveService {
         };
     }
 
-    public Task<String> uploadFile(String fileId, String name, String absolutePath) {
-        return Tasks.call(mExecutor, () -> {
 
+
+    public Task<String> uploadFile(Context context,String name, String absolutePath) {
+        return Tasks.call(mExecutor, () -> {
+            String subRootFolderId = Preferences.getDriveSubFolderId(context, "subFolderId");
+            Log.e("subfolder save Id cla",""+subRootFolderId);
 
             File metadata = new File()
-                    .setParents(Collections.singletonList(fileId))
+                    .setParents(Collections.singletonList(subRootFolderId))
                     .setName(name)
                     .setMimeType("audio/mpeg");
 
@@ -155,6 +164,26 @@ public class GoogleDriveService {
 
 
             FileContent mediaContent = new FileContent("audio/mpeg", filePath);
+
+            Long fileLength =  mediaContent.getLength();
+
+            InputStreamContent mediaContent2 = new InputStreamContent("application/vnd.google-apps.audio", new FileInputStream(absolutePath));
+
+            mediaContent2.setLength(absolutePath.length());
+
+            Drive.Files.Create create=mDriveService.files().create(metadata,mediaContent2);
+
+            if(fileLength > 5 * 1024 * 1024)
+            {
+                MediaHttpUploader uploader = create.getMediaHttpUploader();
+                uploader.setDirectUploadEnabled(false);
+                uploader.setChunkSize(MediaHttpUploader.MINIMUM_CHUNK_SIZE);
+
+               File file = create.execute();
+                if (file != null) {
+
+                }
+            }
 
             File file = mDriveService.files().create(metadata, mediaContent)
                     .setFields("id")
@@ -188,35 +217,70 @@ public class GoogleDriveService {
         });
     }
 
+    public void storeData(String fileId, String name, String filePath){
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
 
-    /**
-     * Updates the file identified by {@code fileId} with the given {@code name} and {@code
-     * content}.
-     */
+                File body = new File();
+                body.setName(name);
+                body.setMimeType("application/vnd.google-apps.audio");
+                body.setParents(Collections.singletonList(fileId));
+
+                HttpHeaders header = new HttpHeaders();
+                header.setContentLength(0L);
+                header.setContentType(filePath);
+                header.set("X-Upload-Content-Type","image/jpeg");
+
+                try {
+                    HttpResponse response= mDriveService
+                            .files()
+                            .create(body)
+                            .setRequestHeaders(header)
+                            .set("uploadType","resumable")
+                            .buildHttpRequest()
+                            .execute();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+        });
+        thread.start();
+    }
 
     public Task<Void> saveFile(String fileId, String name, String content) {
         return Tasks.call(mExecutor, () -> {
             // Create a File containing any metadata changes.
             File metadata = new File()
-                    .setParents(Collections.singletonList(fileId))
-                    .setName(name);
+//                    .setParents(Collections.singletonList(fileId))
+                    .setName(name+".mp3")
+                    .setMimeType("application/vnd.google-apps.audio");;
 
+/*
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             byte[] buf = new byte[1024];
-            FileInputStream fis = new FileInputStream(content);
+            FileInputStream fis = new FileInputStream(String.valueOf(content));
             for (int readNum; (readNum = fis.read(buf)) != -1;) {
                 baos.write(buf, 0, readNum);
             }
             BufferedInputStream bufferedInputStream = new BufferedInputStream(fis);
             byte[] buffer = new byte[8 * 1024];
+*/
 
-            byte[] fileContent = baos.toByteArray();
+            java.io.File filePath = new java.io.File(content);//Large File Of 60 Mega Bytes
+            FileContent mediaContent = new FileContent("audio/mp3",filePath);
 
+            mDriveService.files().create(metadata,mediaContent).execute();
 
-            ByteArrayContent contentStream = ByteArrayContent.fromString("audio/.mp3", String.valueOf(fileContent));
+//            HttpResponse response = mDriveService.getRequestFactory()
+//                    .buildGetRequest(new GenericUrl(filePath.getAbsolutePath())).execute();
+//            Drive.Files.Create create=mDriveService.files().create(metadata,mediaContent);
+//            ByteArrayContent contentStream = ByteArrayContent.fromString("audio/.mp3", mediaContent);
             // Update the metadata and contents.
 //            mDriveService.files().update(metadata).execute();
-            mDriveService.files().create(metadata,contentStream).execute();
+//            mDriveService.files().create(metadata,mediaContent).execute();
             return null;
         });
     }

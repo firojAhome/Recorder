@@ -9,7 +9,12 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
+import com.dropbox.core.DbxException;
 import com.dropbox.core.android.Auth;
+import com.dropbox.core.v2.DbxClientV2;
+import com.dropbox.core.v2.files.CreateFolderErrorException;
+import com.dropbox.core.v2.files.GetMetadataErrorException;
+import com.dropbox.core.v2.files.LookupError;
 import com.example.recorder.Home;
 import com.example.recorder.R;
 import com.example.recorder.storage.Preferences;
@@ -19,15 +24,15 @@ public class DropBoxLogin extends AppCompatActivity {
     Button dropLogin;
     Toolbar dropToolbar;
 
-
+    DbxClientV2 dbxClientV2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_drop_box_login);
 
-        dropLogin = findViewById(R.id.drop_sign_in_button);
         dropToolbar = findViewById(R.id.drop_back_button);
+        dropLogin = findViewById(R.id.drop_sign_in_button);
 
         setSupportActionBar(dropToolbar);
         // add back arrow to toolbar
@@ -41,15 +46,19 @@ public class DropBoxLogin extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Auth.startOAuth2Authentication(getApplicationContext(), getString(R.string.APP_KEY));
+
             }
         });
     }
+
 
     @Override
     protected void onResume() {
         super.onResume();
         getAccessToken();
     }
+
+
 
     public void getAccessToken() {
         String accessToken = Auth.getOAuth2Token(); //generate Access Token
@@ -59,6 +68,33 @@ public class DropBoxLogin extends AppCompatActivity {
             //Proceed to MainActivity
             Intent intent = new Intent(DropBoxLogin.this, Home.class);
             startActivity(intent);
+        }
+    }
+
+    private void createFolder() {
+        try
+        {
+            dbxClientV2.files().getMetadata("/Call Recorder");
+        }
+        catch (GetMetadataErrorException e) {
+            // TODO Auto-generated catch block
+            if (e.errorValue.isPath()) {
+                LookupError le = e.errorValue.getPathValue();
+                if (le.isNotFound()) {
+                    System.out.println("Path doesn't exist on Dropbox: ");
+                    try {
+                        dbxClientV2.files().createFolder("/Call Recorder");
+                    } catch (CreateFolderErrorException e1) {
+                        // TODO Auto-generated catch block
+                        e1.printStackTrace();
+                    } catch (DbxException e1) {
+                        // TODO Auto-generated catch block
+                        e1.printStackTrace();
+                    }
+                }
+            }
+        } catch (DbxException e) {
+            e.printStackTrace();
         }
     }
 

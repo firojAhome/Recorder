@@ -6,6 +6,7 @@ import androidx.appcompat.widget.Toolbar;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -18,6 +19,8 @@ import com.example.recorder.drop.DropBoxLogin;
 import com.example.recorder.google.GoogleDriveLogin;
 import com.example.recorder.google.GoogleDriveService;
 import com.example.recorder.storage.Preferences;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 
 public class Setting extends AppCompatActivity {
 
@@ -71,19 +74,32 @@ public class Setting extends AppCompatActivity {
             }
         });
 
-
     }
 
 
     private void CheckedPermission() {
         switch (radioGroup.getCheckedRadioButtonId()) {
             case R.id.google:
-                Intent i = new Intent(this, GoogleDriveLogin.class);
-                startActivity(i);
+
+                if (Preferences.getDriveButton(this,"isClicked")){
+
+                    GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
+                    if (acct == null) {
+                        startActivity(new Intent(Setting.this,GoogleDriveLogin.class));
+                        String personName = acct.getDisplayName();
+                        Log.e("check sigIn or not"," "+personName);
+                    }
+                    Log.e("check sigIn or not"," "+acct.getAccount());
+
+                }else {
+                    startActivity(new Intent(Setting.this,GoogleDriveLogin.class));
+                }
+
                 Toast.makeText(this, "Google drive login!", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.drop_box:
+                Log.e("check drop box token"," "+tokenExists());
                 if (!tokenExists()) {
                     Intent dropBoxLogin = new Intent(this, DropBoxLogin.class);
                     startActivity(dropBoxLogin);
