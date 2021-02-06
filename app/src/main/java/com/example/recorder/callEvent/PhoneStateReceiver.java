@@ -31,6 +31,9 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.security.AccessController;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -49,8 +52,8 @@ public class PhoneStateReceiver extends Service{
 
     private static final String TAG = "PhoneStateReceiver";
     private MediaRecorder recorder = null;
-    private File audiofile;
-    String callNumber;
+    private File tempFile;
+    String callNumber,filePath,audioPath;
     private boolean recordstarted = false;
     private static final String ACTION_IN = "android.intent.action.PHONE_STATE";
     private static final String ACTION_OUT = "android.intent.action.NEW_OUTGOING_CALL";
@@ -135,7 +138,7 @@ public class PhoneStateReceiver extends Service{
     }
 
     private void startRecording(String number, Date date) {
-        System.out.print("Thissi dsjkfdjkfdsaffg");
+
         String fileDate = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
         File dateDir = new File(Environment.getExternalStorageDirectory(),"/CallRecords/"+fileDate);
         File sampleDir = new File(Environment.getExternalStorageDirectory(), "/CallRecords");
@@ -145,18 +148,25 @@ public class PhoneStateReceiver extends Service{
             dateDir.mkdir();
         }
 
-//        dir = new File(System.getProperty("java.io.tmpdir"));
         callNumber = number;
-        String out = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
-        String ext = ".mp3";
-        String file_name = number +" "+ out + ext;
+        String time = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
+
+        String file_name = number +" "+ time;
         try {
             System.out.println("check file name suffix"+file_name);
-            audiofile = File.createTempFile("abc.mp3","");
-            System.out.println(audiofile.getName()+ "\t" + audiofile.getAbsolutePath());
-            File parent = new File(System.getProperty("java.io.tmpdir"));
+            tempFile = File.createTempFile(file_name,".mp3",dateDir);
 
-            Log.e("asoifof","cgeuihirar");
+            filePath = tempFile.getAbsolutePath();
+            if (tempFile.exists()) {
+                tempFile.delete();
+            }
+
+//            audiofile.deleteOnExit();
+            String sub = filePath.substring(0,filePath.length()-13)+".mp3";
+            Log.e("print audio path",""+tempFile);
+            Log.e("print audio sub",""+sub);
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -166,7 +176,9 @@ public class PhoneStateReceiver extends Service{
         recorder.setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION);
         recorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-        recorder.setOutputFile(audiofile.getAbsolutePath());
+
+        audioPath = filePath.substring(0,filePath.length()-14)+".mp3";
+        recorder.setOutputFile(audioPath);
 
         try {
             recorder.prepare();
@@ -192,7 +204,7 @@ public class PhoneStateReceiver extends Service{
             recordstarted = false;
         }
 
-        if(audiofile.getAbsolutePath() != null){
+        if(audioPath != null){
             shareInStorage();
         }
     }
@@ -203,11 +215,11 @@ public class PhoneStateReceiver extends Service{
             case 0:
                 GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
                 if (acct != null) {
-                    googleDriveLogin.startDriveStorage(applicationContext,callNumber,audiofile.getAbsolutePath());
+                    googleDriveLogin.startDriveStorage(applicationContext,callNumber,audioPath);
                 }
                 break;
             case 1:
-                home.storeInDropBox(applicationContext,callNumber,audiofile.getAbsolutePath(),prefToken);
+                home.storeInDropBox(applicationContext,callNumber,audioPath,prefToken);
                 break;
             case 2:
 

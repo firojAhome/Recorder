@@ -60,6 +60,7 @@ public class Preferences {
         return sharedPreferences.getString(keyValue, null);
     }
 
+    //drive
     public static void setSubFolderDate(Context context, String key, Date value){
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor editor = settings.edit();
@@ -98,6 +99,7 @@ public class Preferences {
         return sharedPreferences.getBoolean(keyValue, false);
     }
 
+    //dropbox date
     public static void setDropboxSubFolderDate(Context context, String key, Date value){
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor editor = settings.edit();

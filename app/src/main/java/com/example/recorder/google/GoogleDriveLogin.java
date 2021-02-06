@@ -47,13 +47,14 @@ import java.util.List;
 
 public class GoogleDriveLogin extends AppCompatActivity{
 
-    private static final int RC_SIGN_IN = 1;
+    private static final int    RC_SIGN_IN = 1;
     private static final String TAG = "GoogleDriveLogin";
     SignInButton signInButton;
     GoogleSignInClient mGoogleSignInClient;
     GoogleSignInOptions gso;
 
     GoogleDriveService mGoogleDriveService;
+
     String serverClientId = "23602232397-2ndsrgt44jqt7dodt20gquonfqm2i4qm.apps.googleusercontent.com";
 
     Scope driveSCOPE = new Scope(Scopes.DRIVE_FILE);
@@ -66,6 +67,7 @@ public class GoogleDriveLogin extends AppCompatActivity{
         signInButton = findViewById(R.id.sign_in_button);
 
 
+        Log.e("check","google drive login");
         //client secret  S99n52ETvRg2aYxLUsVsdPhr
         gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestScopes(new Scope(Scopes.DRIVE_FILE))

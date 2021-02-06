@@ -38,7 +38,7 @@ import com.google.android.material.navigation.NavigationView;
 
 import java.io.File;
 import java.io.IOException;
-
+import java.util.Date;
 
 
 public class Home extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
@@ -63,6 +63,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
         switch (requestCode) {
             case REQUEST_RECORD_AUDIO_PERMISSION:
                 permissionToRecordAccepted = grantResults[0] == PackageManager.PERMISSION_GRANTED;
@@ -95,11 +96,8 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         navigationView.setNavigationItemSelectedListener(this);
         navigationView.setCheckedItem(R.id.nav_first_fragment);
 
-        int radio = Preferences.getRadioIndex(this,"radioIndex");
-        String prefToken = Preferences.getPreferences(this,"prefreToken");
 
-        String driveFolderId = Preferences.getDriveFolderId(this,"driveFolder");
-
+        Log.e("dropboxdate ","check"+Preferences.getDropboxSubFolderDate(this,"DropboxDate"));
 
 
 //shared preference
