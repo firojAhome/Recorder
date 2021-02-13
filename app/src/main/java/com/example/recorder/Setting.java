@@ -18,6 +18,7 @@ import android.widget.Toast;
 import com.example.recorder.drop.DropBoxLogin;
 import com.example.recorder.google.GoogleDriveLogin;
 import com.example.recorder.google.GoogleDriveService;
+import com.example.recorder.onedrive.OneDrive;
 import com.example.recorder.storage.Preferences;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -95,7 +96,7 @@ public class Setting extends AppCompatActivity {
                     startActivity(new Intent(Setting.this,GoogleDriveLogin.class));
                 }
 
-                Toast.makeText(this, "Google drive login!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Google drive", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.drop_box:
@@ -107,7 +108,13 @@ public class Setting extends AppCompatActivity {
                     Intent dropIntent = new Intent(this,Home.class);
                     startActivity(dropIntent);
                 }
-                Toast.makeText(this, "drop", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "drop box", Toast.LENGTH_SHORT).show();
+                break;
+
+            case R.id.oneDrive:
+                Intent oneDrive = new Intent(this, OneDrive.class);
+                startActivity(oneDrive);
+                Toast.makeText(this, "One drive", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.local:

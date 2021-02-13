@@ -6,6 +6,14 @@
     android:layout_height="match_parent"
     tools:context=".google.GoogleDriveLogin">
 
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/google_drive_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="?attr/actionBarTheme"
+        app:navigationIcon="@drawable/back"
+        tools:ignore="MissingConstraints"/>
+
     <com.google.android.gms.common.SignInButton
         android:id="@+id/sign_in_button"
         android:layout_width="wrap_content"
@@ -15,7 +23,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/google_drive_toolbar" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

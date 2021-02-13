@@ -35,7 +35,7 @@ public class UploadTask extends AsyncTask{
     @Override
     protected Object doInBackground(Object[] params) {
 
-        createFolder();
+        createFolder("/Call Recorder");
         Date date = new Date();
         String fileDate = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
 
@@ -45,12 +45,9 @@ public class UploadTask extends AsyncTask{
 
         Log.e("check0 date","pref"+prefDropBox);
         if (prefDropBox != date.getDate()) {
-            try {
-                dbxClient.files().createFolder("/Call Recorder/"+fileDate);
-                Log.e("check date","pref"+prefDropBox);
-            } catch (DbxException e) {
-                e.printStackTrace();
-            }
+            //                dbxClient.files().createFolder("/Call Recorder/"+fileDate);
+            createFolder(filePath);
+            Log.e("check date","pref"+prefDropBox);
             Preferences.setDropboxSubFolderDate(context, "DropboxDate", date);
             Log.e("dropboxdate ","check"+Preferences.getDropboxSubFolderDate(context,"DropboxDate"));
         }
@@ -81,10 +78,10 @@ public class UploadTask extends AsyncTask{
     }
 
 
-    private void createFolder() {
+    private void createFolder(String folderName) {
         try
         {
-            dbxClient.files().getMetadata("/Call Recorder");
+            dbxClient.files().getMetadata(folderName);
         }
         catch (GetMetadataErrorException e) {
             // TODO Auto-generated catch block
@@ -93,7 +90,7 @@ public class UploadTask extends AsyncTask{
                 if (le.isNotFound()) {
                     System.out.println("Path doesn't exist on Dropbox: ");
                     try {
-                        dbxClient.files().createFolder("/Call Recorder");
+                        dbxClient.files().createFolder(folderName);
                     } catch (CreateFolderErrorException e1) {
                         // TODO Auto-generated catch block
                         e1.printStackTrace();

@@ -1,6 +1,17 @@
 plugins {
     id 'com.android.application'
 }
+allprojects {
+    repositories {
+        maven {
+            url 'https://pkgs.dev.azure.com/MicrosoftDeviceSDK/DuoSDK-Public/_packaging/Duo-SDK-Feed/maven/v1'
+        }
+        jcenter()
+        jcenter{
+            url 'https://oss.jfrog.org/artifactory/oss-snapshot-local'
+        }
+    }
+}
 
 android {
     compileSdkVersion 30
@@ -43,6 +54,10 @@ android {
 
     }
 
+    packagingOptions{
+        exclude("META-INF/jersey-module-version")
+    }
+
 }
 
 
@@ -57,13 +72,13 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
     //googl
-    implementation'com.google.android.gms:play-services-identity:17.0.0'
+//    implementation'com.google.android.gms:play-services-identity:17.0.0'
     implementation 'com.google.android.gms:play-services-auth:19.0.0'
     implementation 'com.google.android.gms:play-services-drive:11.6.0'
     implementation 'com.google.http-client:google-http-client-gson:1.26.0'
-    implementation('com.google.api-client:google-api-client-android:1.26.0') {
-        exclude group: 'org.apache.httpcomponents'
-    }
+//    implementation('com.google.api-client:google-api-client-android:1.26.0') {
+//        exclude group: 'org.apache.httpcomponents'
+//    }
     implementation('com.google.apis:google-api-services-drive:v3-rev136-1.25.0') {
         exclude group: 'org.apache.httpcomponents'
     }
@@ -77,5 +92,14 @@ dependencies {
     implementation 'com.google.api-client:google-api-client:1.30.5'
     implementation 'com.google.api-client:google-api-client-android:1.30.5'
     implementation 'com.google.apis:google-api-services-people:v1-rev99-1.22.0'
+
+    //one drive
+    implementation 'com.microsoft.identity.client:msal:2.+'
+    implementation 'com.microsoft.graph:microsoft-graph:1.5.+'
+    implementation 'com.microsoft.graph:microsoft-graph-android-auth:0.1.0-SNAPSHOT'
+    implementation('com.onedrive.sdk:onedrive-sdk-android:+')
+//    implementation 'com.microsoft.graph:microsoft-graph-auth:0.3.0'
+    implementation 'com.google.code.gson:gson:2.3.1'
+    implementation 'com.android.volley:volley:1.1.1'
+
 }
-//apply plugin: 'com.google.gms.google-services'

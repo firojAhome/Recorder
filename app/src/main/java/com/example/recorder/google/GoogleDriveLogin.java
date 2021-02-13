@@ -2,6 +2,7 @@ package com.example.recorder.google;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import android.accounts.Account;
 import android.app.Activity;
@@ -47,6 +48,7 @@ import java.util.List;
 
 public class GoogleDriveLogin extends AppCompatActivity{
 
+    Toolbar toolbar;
     private static final int    RC_SIGN_IN = 1;
     private static final String TAG = "GoogleDriveLogin";
     SignInButton signInButton;
@@ -65,6 +67,14 @@ public class GoogleDriveLogin extends AppCompatActivity{
         setContentView(R.layout.activity_google_drive_login);
 
         signInButton = findViewById(R.id.sign_in_button);
+        toolbar = findViewById(R.id.google_drive_toolbar);
+
+        setSupportActionBar(toolbar);
+        // add back arrow to toolbar
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }
 
 
         Log.e("check","google drive login");
@@ -290,6 +300,12 @@ public class GoogleDriveLogin extends AppCompatActivity{
 
             return null;
         }
+    }
+
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
     }
 
 }

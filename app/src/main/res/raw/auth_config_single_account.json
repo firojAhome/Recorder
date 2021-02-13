@@ -1,0 +1,16 @@
+{
+  "client_id" : "19cf28ad-d47b-48b4-9d99-251eb75b110d",
+  "authorization_user_agent" : "DEFAULT",
+  "redirect_uri" : "msauth://com.example.recorder/h8CU%2B6EM%2B5Pq2B3fm8Hwvw0ioas%3D",
+  "account_mode" : "SINGLE",
+  "broker_redirect_uri_registered": true,
+  "authorities" : [
+    {
+      "type": "AAD",
+      "audience": {
+        "type": "PersonalMicrosoftAccount",
+        "tenant_id": "consumers"
+      }
+    }
+  ]
+}

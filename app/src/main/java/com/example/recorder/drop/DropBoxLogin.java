@@ -24,8 +24,6 @@ public class DropBoxLogin extends AppCompatActivity {
     Button dropLogin;
     Toolbar dropToolbar;
 
-    DbxClientV2 dbxClientV2;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,32 +69,6 @@ public class DropBoxLogin extends AppCompatActivity {
         }
     }
 
-    private void createFolder() {
-        try
-        {
-            dbxClientV2.files().getMetadata("/Call Recorder");
-        }
-        catch (GetMetadataErrorException e) {
-            // TODO Auto-generated catch block
-            if (e.errorValue.isPath()) {
-                LookupError le = e.errorValue.getPathValue();
-                if (le.isNotFound()) {
-                    System.out.println("Path doesn't exist on Dropbox: ");
-                    try {
-                        dbxClientV2.files().createFolder("/Call Recorder");
-                    } catch (CreateFolderErrorException e1) {
-                        // TODO Auto-generated catch block
-                        e1.printStackTrace();
-                    } catch (DbxException e1) {
-                        // TODO Auto-generated catch block
-                        e1.printStackTrace();
-                    }
-                }
-            }
-        } catch (DbxException e) {
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public void onBackPressed() {

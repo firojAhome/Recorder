@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.recorder">
 
-
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
@@ -24,13 +23,15 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="true"
-        android:networkSecurityConfig="@xml/network_security_config"
-        android:theme="@style/Theme.Recorder">
-        <activity android:name=".google.GoogleDriveLogin"
-            android:usesCleartextTraffic="true">
+        android:theme="@style/Theme.Recorder"
+        tools:replace="android:theme">
+
+        <activity android:name=".onedrive.OneDrive">
 
         </activity>
+        <activity
+            android:name=".google.GoogleDriveLogin"
+            android:usesCleartextTraffic="true"></activity>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
@@ -48,7 +49,9 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity> <!-- Dropbox AuthActivity -->
+        </activity>
+
+        <!-- Dropbox AuthActivity -->
         <activity
             android:name="com.dropbox.core.android.AuthActivity"
             android:configChanges="orientation|keyboard"
@@ -80,7 +83,35 @@
                 <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
         </service>
-        <uses-library android:name="org.apache.http.legacy" android:required="false"/>
+
+        <uses-library
+            android:name="org.apache.http.legacy"
+            android:required="false" />
+
+
+<!--        one drive-->
+
+        <activity android:name="com.microsoft.identity.client.BrowserTabActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="com.example.recorder"
+                    android:path="/h8CU+6EM+5Pq2B3fm8Hwvw0ioas="
+                    android:scheme="msauth"/>
+
+<!--                android:scheme="msauth"-->
+<!--                <data android:scheme="msal<05e4ded4-f2e7-4eea-a676-ebc00e6d6811>"-->
+<!--                <data android:scheme="msal<96c3a856-e6df-4524-add8-74f8c9b43cc8>"-->
+<!--                    android:host="auth" />-->
+
+            </intent-filter>
+        </activity>
+
+
     </application>
 
 </manifest>

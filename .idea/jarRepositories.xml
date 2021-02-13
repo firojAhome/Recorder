@@ -31,5 +31,15 @@
       <option name="name" value="MavenRepo" />
       <option name="url" value="https://repo.maven.apache.org/maven2/" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="maven2" />
+      <option name="name" value="maven2" />
+      <option name="url" value="https://pkgs.dev.azure.com/MicrosoftDeviceSDK/DuoSDK-Public/_packaging/Duo-SDK-Feed/maven/v1" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="BintrayJCenter3" />
+      <option name="name" value="BintrayJCenter3" />
+      <option name="url" value="https://oss.jfrog.org/artifactory/oss-snapshot-local" />
+    </remote-repository>
   </component>
 </project>
