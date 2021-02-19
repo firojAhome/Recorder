@@ -17,7 +17,6 @@ import android.widget.Toast;
 
 import com.example.recorder.drop.DropBoxLogin;
 import com.example.recorder.google.GoogleDriveLogin;
-import com.example.recorder.google.GoogleDriveService;
 import com.example.recorder.onedrive.OneDrive;
 import com.example.recorder.storage.Preferences;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -82,7 +81,7 @@ public class Setting extends AppCompatActivity {
         switch (radioGroup.getCheckedRadioButtonId()) {
             case R.id.google:
 
-                if (Preferences.getDriveButton(this,"isClicked")){
+                if (Preferences.getDriveButton(this,"Checked_Google_Drive_Clicked")){
 
                     GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
                     if (acct == null) {
@@ -112,8 +111,11 @@ public class Setting extends AppCompatActivity {
                 break;
 
             case R.id.oneDrive:
-                Intent oneDrive = new Intent(this, OneDrive.class);
-                startActivity(oneDrive);
+
+                if (!Preferences.isOneDriveLogin(this,"Is_One_DriveLogIn")){
+                    Intent oneDrive = new Intent(this, OneDrive.class);
+                    startActivity(oneDrive);
+                }
                 Toast.makeText(this, "One drive", Toast.LENGTH_SHORT).show();
                 break;
 
@@ -129,7 +131,7 @@ public class Setting extends AppCompatActivity {
 
     //drop box access token
     private boolean tokenExists() {
-        String accessToken = Preferences.getPreferences(this,"prefreToken");
+        String accessToken = Preferences.getDropBoxAccessToken(this,"Drop_Box_Access_Token");
         return accessToken != null;
     }
 

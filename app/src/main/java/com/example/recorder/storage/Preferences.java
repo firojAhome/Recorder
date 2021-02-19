@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
-import com.example.recorder.Home;
+import com.microsoft.identity.client.ISingleAccountPublicClientApplication;
 
 import java.util.Date;
 
@@ -13,14 +13,14 @@ public class Preferences {
 
     Context context;
 
-
     public Preferences(Context context) {
         this.context = context;
     }
 
 
+
     // work
-    public static void setToStorage(Context context, String key, String value) {
+    public static void setDropBoxAccessToken(Context context, String key, String value) {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor editor = settings.edit();
         editor.putString(key, value);
@@ -28,7 +28,7 @@ public class Preferences {
     }
 
 
-    public static String getPreferences(Context context, String keyValue) {
+    public static String getDropBoxAccessToken(Context context, String keyValue) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         return sharedPreferences.getString(keyValue, null);
     }
@@ -44,7 +44,7 @@ public class Preferences {
 
     public static int getRadioIndex(Context context, String keyValue){
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getInt(keyValue, 0);
+        return sharedPreferences.getInt(keyValue, 3);
     }
 
 
@@ -85,7 +85,7 @@ public class Preferences {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         return sharedPreferences.getString(keyValue, null);
     }
-    
+
 
     public static void checkedDriveButton(Context context, String key, boolean value){
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
@@ -94,7 +94,7 @@ public class Preferences {
         editor.apply();
     }
 
-        public static boolean getDriveButton(Context context, String keyValue){
+    public static boolean getDriveButton(Context context, String keyValue){
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         return sharedPreferences.getBoolean(keyValue, false);
     }
@@ -111,4 +111,18 @@ public class Preferences {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         return sharedPreferences.getLong(keyValue, 0);
     }
+
+    //oneDrive
+    public static void setOnDriveLogin(Context context, String key, boolean value){
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putBoolean(key, value);
+        editor.apply();
+    }
+
+    public static boolean isOneDriveLogin(Context context, String keyValue){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return sharedPreferences.getBoolean(keyValue, false);
+    }
+
 }

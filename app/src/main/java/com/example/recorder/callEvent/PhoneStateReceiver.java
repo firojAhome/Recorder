@@ -25,15 +25,13 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.example.recorder.Home;
 import com.example.recorder.google.GoogleDriveLogin;
+import com.example.recorder.onedrive.OneDrive;
 import com.example.recorder.storage.Preferences;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.security.AccessController;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -46,6 +44,7 @@ public class PhoneStateReceiver extends Service{
     private Looper serviceLooper;
     private ServiceHandler serviceHandler;
     private final Handler mHandler = new Handler();
+    String time;
 
     Home home = new Home();
     Context applicationContext = Home.getContextOfApplication();
@@ -80,10 +79,6 @@ public class PhoneStateReceiver extends Service{
 
     }
 
-   /* @Override
-    public void unregisterReceiver(BroadcastReceiver receiver) {
-        super.unregisterReceiver(receiver);
-    }*/
 
     @Override
     public void onCreate() {
@@ -149,7 +144,7 @@ public class PhoneStateReceiver extends Service{
         }
 
         callNumber = number;
-        String time = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
+        time = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
 
         String file_name = number +" "+ time;
         try {
@@ -210,19 +205,27 @@ public class PhoneStateReceiver extends Service{
     }
 
     private void shareInStorage() {
-        String prefToken = Preferences.getPreferences(applicationContext,"prefreToken");
+        Log.e("check ","storage"+Preferences.getRadioIndex(getApplicationContext(),"radioIndex"));
+        String prefToken = Preferences.getDropBoxAccessToken(applicationContext,"Drop_Box_Access_Token");
         switch (Preferences.getRadioIndex(getApplicationContext(),"radioIndex")){
             case 0:
                 GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
                 if (acct != null) {
-                    googleDriveLogin.startDriveStorage(applicationContext,callNumber,audioPath);
+                    String folderName = callNumber+" "+time;
+                    googleDriveLogin.startDriveStorage(getApplicationContext(),folderName,audioPath);
                 }
                 break;
             case 1:
-                home.storeInDropBox(applicationContext,callNumber,audioPath,prefToken);
+                home.storeInDropBox(getApplicationContext(),callNumber,audioPath,prefToken);
                 break;
             case 2:
-
+                Log.e("check ","log 3");
+                String folderTime = new SimpleDateFormat(" dd-MM-yyyy hh-mm-ss").format(new Date());
+                String oneDriveFileName = callNumber+folderTime+".mp3".trim();
+                OneDrive oneDrive = new OneDrive();
+                oneDrive.silentOneDriveStorage(getApplicationContext(),oneDriveFileName,audioPath);
+                break;
+            case 3:
                 break;
             default:
                 break;

@@ -16,6 +16,8 @@ import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import static com.example.recorder.storage.Constant.Drop_Box_Date;
+
 public class UploadTask extends AsyncTask{
 
     private String name;
@@ -35,28 +37,16 @@ public class UploadTask extends AsyncTask{
     @Override
     protected Object doInBackground(Object[] params) {
 
-        createFolder("/Call Recorder");
-        Date date = new Date();
+
         String fileDate = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
-
         Log.e("dropbox date","filedate "+fileDate);
-        String filePath = "/Call Recorder/"+fileDate+"/";
-        Long prefDropBox = Preferences.getDropboxSubFolderDate(context, "DropboxDate");
+        String filePath = "/Call Records/"+fileDate+"/";
 
-        Log.e("check0 date","pref"+prefDropBox);
-        if (prefDropBox != date.getDate()) {
-            //                dbxClient.files().createFolder("/Call Recorder/"+fileDate);
-            createFolder(filePath);
-            Log.e("check date","pref"+prefDropBox);
-            Preferences.setDropboxSubFolderDate(context, "DropboxDate", date);
-            Log.e("dropboxdate ","check"+Preferences.getDropboxSubFolderDate(context,"DropboxDate"));
-        }
         String time = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
 
         String fileName = name+" "+time;
         try {
             // Upload to Dropbox
-//            FileInputStream inputStream = new FileInputStream(file);
             InputStream inputStream = new FileInputStream(file);
                   dbxClient.files().uploadBuilder(filePath + fileName+".mp3")
                             .withMode(WriteMode.ADD)
@@ -71,14 +61,12 @@ public class UploadTask extends AsyncTask{
         }
         return null;
     }
-
     @Override
     protected void onPostExecute(Object o) {
         super.onPostExecute(o);
     }
 
-
-    private void createFolder(String folderName) {
+  /*  private void createFolder(String folderName) {
         try
         {
             dbxClient.files().getMetadata(folderName);
@@ -104,7 +92,7 @@ public class UploadTask extends AsyncTask{
             e.printStackTrace();
         }
     }
-
+*/
 
 
 }

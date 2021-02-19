@@ -7,9 +7,9 @@ allprojects {
             url 'https://pkgs.dev.azure.com/MicrosoftDeviceSDK/DuoSDK-Public/_packaging/Duo-SDK-Feed/maven/v1'
         }
         jcenter()
-        jcenter{
-            url 'https://oss.jfrog.org/artifactory/oss-snapshot-local'
-        }
+//        jcenter{
+//            url 'https://oss.jfrog.org/artifactory/oss-snapshot-local'
+//        }
     }
 }
 
@@ -96,8 +96,8 @@ dependencies {
     //one drive
     implementation 'com.microsoft.identity.client:msal:2.+'
     implementation 'com.microsoft.graph:microsoft-graph:1.5.+'
-    implementation 'com.microsoft.graph:microsoft-graph-android-auth:0.1.0-SNAPSHOT'
-    implementation('com.onedrive.sdk:onedrive-sdk-android:+')
+//    implementation 'com.microsoft.graph:microsoft-graph-android-auth:0.1.0-SNAPSHOT'
+//    implementation('com.onedrive.sdk:onedrive-sdk-android:+')
 //    implementation 'com.microsoft.graph:microsoft-graph-auth:0.3.0'
     implementation 'com.google.code.gson:gson:2.3.1'
     implementation 'com.android.volley:volley:1.1.1'

@@ -52,6 +52,9 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import static com.example.recorder.storage.Constant.Google_Drive_Folder_Id;
+import static com.example.recorder.storage.Constant.Google_Drive_SubFolder_Id;
+
 public class GoogleDriveService {
 
     Context context;
@@ -68,19 +71,22 @@ public class GoogleDriveService {
      * Creates a text file in the user's My Drive folder and returns its file ID.
      */
 
-    public Task<String> createFolder(String name){
+    public Task<String> createFolder(Context context,String name){
         return Tasks.call(mExecutor,() ->{
             File fileMetadata = new File();
             fileMetadata.setName(name);
             fileMetadata.setMimeType("application/vnd.google-apps.folder");
 
-            File file = mDriveService.files().create(fileMetadata)
+            File parentFolder = mDriveService.files().create(fileMetadata)
                     .setFields("id")
                     .execute();
-            System.out.println("Folder ID: " + file.getId());
+            System.out.println("Folder ID: " + parentFolder.getId());
 
-            Preferences.setDrviefolderId(context,"driveFolder",file.getId());
-            return file.getId();
+            Preferences.setDrviefolderId(context, "Google_Drive_Folder_Id", parentFolder.getId());
+
+            Log.e("check id saved"," "+Preferences.getDriveFolderId(context,"Google_Drive_Folder_Id"));
+//            Log.e("check folder Id"," "+Preferences.getSharedPreferenceValue(context,"Google_Drive_Folder_Id"));
+            return parentFolder.getId();
 
         });
 
@@ -88,23 +94,27 @@ public class GoogleDriveService {
 
 
 // we have to share parent folder id the create
-    public Task<String> createSubFolder(Context context,String parentFolderId, String subFolderName) {
+    public Task<String> createSubFolder(Context context, String subFolderName) {
 
+        String driveFolderId = Preferences.getDriveFolderId(context, "driveFolderName");
+        Log.e("print drivefolderId"," "+driveFolderId);
         return Tasks.call(mExecutor, () -> {
             File metadata = new File()
-                    .setParents(Collections.singletonList(parentFolderId))
-                    .setMimeType("application/vnd.google-apps.folder")
-                    .setName(subFolderName);
+                    .setParents(Collections.singletonList(driveFolderId))
+                    .setName(subFolderName)
+                    .setMimeType("application/vnd.google-apps.folder");
 
             File googleFile = mDriveService.files().create(metadata).execute();
-            Preferences.setDrvieSubFolderId(context,"subFolderId",googleFile.getId());
+
             Log.e("sub root Folder Id"," "+googleFile.getId());
+            Log.e("sub root Folder Id"," "+"check");
             if (googleFile == null) {
                 throw new IOException("Null result when requesting file creation.");
             }
 
             System.out.println("Folder Id "+googleFile.getId());
-            Log.e("SERvice java",Preferences.getDriveSubFolderId(context,"subFolderId"));
+            Preferences.setDrvieSubFolderId(context,"Google_Drive_SubFolder_Id",googleFile.getId());
+            Log.e("SERvice java",Preferences.getDriveSubFolderId(context,"Google_Drive_SubFolder_Id"));
             return googleFile.getId();
 
         });
@@ -148,11 +158,9 @@ public class GoogleDriveService {
         };
     }*/
 
-
-
     public Task<String> uploadFile(Context context,String name, String absolutePath) {
         return Tasks.call(mExecutor, () -> {
-            String subRootFolderId = Preferences.getDriveSubFolderId(context, "subFolderId");
+            String subRootFolderId = Preferences.getDriveSubFolderId(context, "Google_Drive_SubFolder_Id");
             Log.e("subfolder save Id cla",""+subRootFolderId);
 
             File metadata = new File()
@@ -252,7 +260,6 @@ public class GoogleDriveService {
 
 
 
-
     public Task<FileList> queryFiles() {
         return Tasks.call(mExecutor, () ->
                 mDriveService.files().list().setSpaces("drive").execute());
@@ -264,7 +271,6 @@ public class GoogleDriveService {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("audio/.mp3");
-
         return intent;
     }
 

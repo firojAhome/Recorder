@@ -11,10 +11,10 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
+
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
+
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -27,18 +27,10 @@ import android.widget.Toast;
 import com.example.recorder.callEvent.PhoneStateReceiver;
 import com.example.recorder.drop.DropboxClient;
 import com.example.recorder.drop.UploadTask;
-import com.example.recorder.google.GoogleDriveLogin;
-import com.example.recorder.google.GoogleDriveService;
 import com.example.recorder.storage.Preferences;
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.navigation.NavigationView;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.Date;
 
 
 public class Home extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
@@ -97,7 +89,9 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         navigationView.setCheckedItem(R.id.nav_first_fragment);
 
 
-        Log.e("dropboxdate ","check"+Preferences.getDropboxSubFolderDate(this,"DropboxDate"));
+        Log.e("dropboxdate ","check"+Preferences.getDropboxSubFolderDate(this,"Drop_Box_Date"));
+        String driveFolderId = Preferences.getDriveFolderId(this, "Google_Drive_Folder_Id");
+        Log.e("driveFOlderID CHECK ", " " + driveFolderId);
 
 
 //shared preference
@@ -139,9 +133,6 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         return contextOfApplication;
     }
 
-
-
-
     public void storeInDropBox(Context applicationContext, String number, String absolutePath, String prefToken) {
 
         Log.e(LOG_TAG,"Phone_recever_Token"+prefToken);
@@ -155,7 +146,6 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         }
 
     }
-
 
 
     @Override
@@ -182,33 +172,6 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
-
-//    @Override
-//    protected void onResume() {
-//        unregisterReceiver(testReceiver);
-//        super.onResume();
-//    }
-
-//
-//    private BroadcastReceiver testReceiver = new BroadcastReceiver() {
-//        @RequiresApi(api = Build.VERSION_CODES.O)
-//        @Override
-//        public void onReceive(Context context, Intent intent) {
-////            int resultCode = intent.getIntExtra("resultCode", RESULT_CANCELED);
-//            String state = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
-//           if (state.equals(TelephonyManager.EXTRA_STATE_IDLE)){
-//               //call idle
-//               Log.v("timer", "i value = "+state);
-//               startService();
-//           }if (state.equals(TelephonyManager.EXTRA_STATE_OFFHOOK)){
-//                Log.v("timer", "i value = "+state);
-//                startService();
-//            }if (state.equals(TelephonyManager.EXTRA_STATE_RINGING)){
-//                Log.v("timer", "i value = "+state);
-//                startService();
-//            }
-//        }
-//    };
 
 
     @RequiresApi(api = Build.VERSION_CODES.O)

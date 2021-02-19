@@ -9,15 +9,16 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.Toast;
 
 import com.example.recorder.Home;
 import com.example.recorder.R;
+import com.example.recorder.onedrive.OneDrive;
 import com.example.recorder.storage.Preferences;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -26,9 +27,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.Scopes;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.Scope;
-import com.google.android.gms.drive.DriveResourceClient;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.json.gson.GsonFactory;
@@ -38,12 +36,12 @@ import com.google.api.services.drive.model.File;
 import com.google.api.services.people.v1.model.Person;
 
 import java.lang.ref.WeakReference;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+
 
 
 public class GoogleDriveLogin extends AppCompatActivity{
@@ -71,10 +69,13 @@ public class GoogleDriveLogin extends AppCompatActivity{
 
         setSupportActionBar(toolbar);
         // add back arrow to toolbar
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setDisplayShowHomeEnabled(true);
-        }
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onBackPressed();
+            }
+        });
+
 
 
         Log.e("check","google drive login");
@@ -190,37 +191,29 @@ public class GoogleDriveLogin extends AppCompatActivity{
         Log.e("driveFOlderID CHECK ", " " + driveFolderId);
         if (mGoogleDriveService != null){
             if (driveFolderId == null) {
-                mGoogleDriveService.createFolder("Call Recorder");
+                mGoogleDriveService.createFolder(GoogleDriveLogin.this,"Call Recorder");
 
                 startActivity(new Intent(this,Home.class));
                 finish();
             }
 
-           // createSubFolder(this);
+            // createSubFolder(this);
 
         }
     }
 
     private void createSubFolder(Context context) {
 
-        String driveFolderId = Preferences.getDriveFolderId(context, "driveFolderName");
-        SimpleDateFormat formatter = new SimpleDateFormat("dd/mm/yyyy");
         String fileDate = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
         Date date = new Date();
-        String strDate = formatter.format(date);
-        System.out.println(formatter.format(date));
 
         Long prefSaveDate = Preferences.getSubFolderDate(context, "subFolderDate");
         Log.e("prefDate", " " + prefSaveDate);
         Log.e("prefDate", "checkDate " + date.getDate());
-        Log.e("driveFOlderID CHECK ", " " + driveFolderId);
-        Log.e("folder date CHECK ", " " + strDate);
-
-
 
         if (prefSaveDate != date.getDate()) {
-            mGoogleDriveService.createSubFolder(context,driveFolderId, fileDate);
             Preferences.setSubFolderDate(context, "subFolderDate", date);
+            mGoogleDriveService.createSubFolder(context,fileDate);
             Log.e("ahofa","check"+Preferences.getSubFolderDate(context,"subFolderDate"));
         }
 
@@ -242,8 +235,8 @@ public class GoogleDriveLogin extends AppCompatActivity{
         } else {
             GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(context);
 
-                GetContactsTask task = new GetContactsTask(account.getAccount(),context,number,absolutePath);
-                task.execute();
+            GetContactsTask task = new GetContactsTask(account.getAccount(),context,number,absolutePath);
+            task.execute();
 
         }
 
@@ -255,7 +248,7 @@ public class GoogleDriveLogin extends AppCompatActivity{
 
         private WeakReference<Context> contextRef;
         Account mAccount;
-//        Context phoneContext;
+        //        Context phoneContext;
         String filePath;
         String phoneNumber;
 
@@ -301,6 +294,8 @@ public class GoogleDriveLogin extends AppCompatActivity{
             return null;
         }
     }
+
+
 
 
     @Override
