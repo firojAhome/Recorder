@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import static com.example.recorder.storage.Constant.Call_Records;
 import static com.example.recorder.storage.Constant.Drop_Box_Date;
 
 public class UploadTask extends AsyncTask{
@@ -40,7 +41,7 @@ public class UploadTask extends AsyncTask{
 
         String fileDate = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
         Log.e("dropbox date","filedate "+fileDate);
-        String filePath = "/Call Records/"+fileDate+"/";
+        String filePath = "/"+Call_Records+"/"+fileDate+"/";
 
         String time = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
 

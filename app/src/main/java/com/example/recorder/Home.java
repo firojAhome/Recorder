@@ -9,9 +9,11 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import android.Manifest;
 
+import android.app.Notification;
 import android.content.Context;
 import android.content.Intent;
 
@@ -20,26 +22,37 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.example.recorder.callEvent.AutoStartHelper;
 import com.example.recorder.callEvent.PhoneStateReceiver;
 import com.example.recorder.drop.DropboxClient;
 import com.example.recorder.drop.UploadTask;
 import com.example.recorder.storage.Preferences;
 import com.google.android.material.navigation.NavigationView;
+import com.judemanutd.autostarter.AutoStartPermissionHelper;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import static com.example.recorder.storage.Constant.Call_Records;
+import static com.example.recorder.storage.Constant.PREF_KEY_APP_AUTO_START;
 
 
+@RequiresApi(api = Build.VERSION_CODES.O)
 public class Home extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener{
 
     DrawerLayout drawerLayout;
     NavigationView navigationView;
     Toolbar toolbar;
     SwitchCompat switchCompat;
-
+    ActionBarDrawerToggle toggle;
     //audio
     private static final String LOG_TAG = "AudioRecordTest";
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
@@ -69,7 +82,15 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
+
+        if (!Preferences.getAutoStartPermission(this,"PREF_KEY_APP_AUTO_START")){
+            AutoStartPermissionHelper.getInstance().getAutoStartPermission(this);
+//            AutoStartHelper.getInstance().getAutoStartPermission(this);
+            Preferences.setAutoStartPermission(this,"PREF_KEY_APP_AUTO_START",true);
+        }
+
 
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
@@ -82,21 +103,19 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         setSupportActionBar(toolbar);
 
         navigationView.bringToFront();
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.drawer_open, R.string.drawer_close);
+        toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.drawer_open, R.string.drawer_close);
         drawerLayout.addDrawerListener(toggle);
 
         navigationView.setNavigationItemSelectedListener(this);
         navigationView.setCheckedItem(R.id.nav_first_fragment);
 
 
-        Log.e("dropboxdate ","check"+Preferences.getDropboxSubFolderDate(this,"Drop_Box_Date"));
-        String driveFolderId = Preferences.getDriveFolderId(this, "Google_Drive_Folder_Id");
-        Log.e("driveFOlderID CHECK ", " " + driveFolderId);
+        String time = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
 
 
 //shared preference
         SharedPreferences sharedPreferences = getSharedPreferences("save", MODE_PRIVATE);
-        switchCompat.setChecked(sharedPreferences.getBoolean("value", false));
+        switchCompat.setChecked(sharedPreferences.getBoolean("value", true));
 
         switchCompat.setOnClickListener(new View.OnClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.O)
@@ -105,7 +124,8 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
                 if (switchCompat.isChecked()) {
                     SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
                     editor.putBoolean("value", true);
-                    Toast.makeText(Home.this, "Call recording Start!!!", Toast.LENGTH_SHORT).show();
+                    Preferences.setServiceStart(Home.this,"service",true);
+                    Toast.makeText(Home.this, "Call recording Start!", Toast.LENGTH_SHORT).show();
                     editor.apply();
 
                 } else {
@@ -113,7 +133,8 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
                     SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
                     editor.putBoolean("value", false);
                     switchCompat.setChecked(false);
-                    Toast.makeText(Home.this, "Call recording off!!!", Toast.LENGTH_SHORT).show();
+                    Preferences.setServiceStart(Home.this,"service",false);
+                    Toast.makeText(Home.this, "Call recording off!", Toast.LENGTH_SHORT).show();
                     editor.apply();
                     stopService();
 
@@ -123,11 +144,20 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         });
 
         if(switchCompat.isChecked()){
+            Preferences.setServiceStart(Home.this,"service",true);
             Intent intent = new Intent(this,PhoneStateReceiver.class);
             startService(intent);
         }
+        //check if already service start or not
+        if (!Preferences.getServiceInfo(Home.this,"service")){
+
+            Log.e("check","check");
+            Log.e("print log",""+Preferences.getServiceInfo(Home.this,"service"));
+        }
 
     }
+
+
 
     public static Context getContextOfApplication(){
         return contextOfApplication;
@@ -172,6 +202,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
+
 
 
     @RequiresApi(api = Build.VERSION_CODES.O)

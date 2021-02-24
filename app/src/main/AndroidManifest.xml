@@ -16,24 +16,22 @@
         android:maxSdkVersion="29" />
     <uses-permission android:name="android.permissions.READ_PHONE_NUMBERS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Recorder"
         android:usesCleartextTraffic="true"
-        android:networkSecurityConfig="@xml/network_security_config"
         tools:replace="android:theme">
-
-        <activity android:name=".onedrive.OneDrive">
-
-        </activity>
+        <activity android:name=".onedrive.OneDrive"></activity>
         <activity
             android:name=".google.GoogleDriveLogin"
-            android:usesCleartextTraffic="true"></activity>
+            android:usesCleartextTraffic="true" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
@@ -59,15 +57,11 @@
             android:configChanges="orientation|keyboard"
             android:launchMode="singleTask">
             <intent-filter>
-
                 <!-- Insert your app key after “db-  ...” -->
                 <data android:scheme="db-zdsm97h628ogspg" />
-
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
-
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
         </activity>
@@ -80,6 +74,7 @@
             android:name=".callEvent.PhoneStateReceiver"
             android:enabled="true"
             android:exported="true"
+            tools:ignore="ExportedService"
             android:foregroundServiceType="microphone">
             <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE" />
@@ -88,30 +83,20 @@
 
         <uses-library
             android:name="org.apache.http.legacy"
-            android:required="false" />
-
-
-<!--        one drive-->
-
+            android:required="false" /> <!-- one drive -->
         <activity android:name="com.microsoft.identity.client.BrowserTabActivity">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
                     android:host="com.example.recorder"
                     android:path="/h8CU+6EM+5Pq2B3fm8Hwvw0ioas="
-                    android:scheme="msauth"/>
-
-<!--                android:scheme="msauth"-->
-<!--                <data android:scheme="msal<05e4ded4-f2e7-4eea-a676-ebc00e6d6811>"-->
-<!--                <data android:scheme="msal<96c3a856-e6df-4524-add8-74f8c9b43cc8>"-->
-<!--                    android:host="auth" />-->
-
+                    android:scheme="msauth" />
             </intent-filter>
         </activity>
+
 
 
     </application>

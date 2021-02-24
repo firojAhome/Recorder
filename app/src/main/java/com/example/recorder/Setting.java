@@ -22,6 +22,10 @@ import com.example.recorder.storage.Preferences;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 
+import static com.example.recorder.storage.Constant.Drop_Box_Access_Token;
+import static com.example.recorder.storage.Constant.Is_Clicked;
+import static com.example.recorder.storage.Constant.Is_One_DriveLogIn;
+
 public class Setting extends AppCompatActivity {
 
     RadioGroup radioGroup;
@@ -81,20 +85,9 @@ public class Setting extends AppCompatActivity {
         switch (radioGroup.getCheckedRadioButtonId()) {
             case R.id.google:
 
-                if (Preferences.getDriveButton(this,"Checked_Google_Drive_Clicked")){
-
-                    GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
-                    if (acct == null) {
-                        startActivity(new Intent(Setting.this,GoogleDriveLogin.class));
-                        String personName = acct.getDisplayName();
-                        Log.e("check sigIn or not"," "+personName);
-                    }
-                    Log.e("check sigIn or not"," "+acct.getAccount());
-
-                }else {
+                if (!Preferences.getDriveButton(this,"Is_Clicked")){
                     startActivity(new Intent(Setting.this,GoogleDriveLogin.class));
                 }
-
                 Toast.makeText(this, "Google drive", Toast.LENGTH_SHORT).show();
                 break;
 

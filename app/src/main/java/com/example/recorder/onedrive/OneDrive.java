@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
@@ -46,15 +47,15 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.example.recorder.storage.Constant.Call_Records;
+
 
 public class OneDrive extends AppCompatActivity {
 
     private final static String[] SCOPES = {"Files.ReadWrite.AppFolder","Files.ReadWrite.All","User.Read","email"};
-    /* Azure AD v2 Configs */
     final static String AUTHORITY = "https://login.microsoftonline.com/common";
 
     public ISingleAccountPublicClientApplication mSingleAccountApp;
-
     private static final String TAG = OneDrive.class.getSimpleName();
 
 
@@ -266,6 +267,7 @@ public class OneDrive extends AppCompatActivity {
                     }
                 });
 
+        Toast.makeText(this, "Logged into One Drive successfully", Toast.LENGTH_SHORT).show();
         Intent i = new Intent(OneDrive.this, Home.class);
         startActivity(i);
     }
@@ -285,7 +287,7 @@ public class OneDrive extends AppCompatActivity {
 
         String subfileName = time+"/"+fileName;
 
-        String URL = "https://graph.microsoft.com/v1.0/me/drive/root:/"+"Call Records"+"/"+subfileName+":/content";
+        String URL = "https://graph.microsoft.com/v1.0/me/drive/root:/"+"CallRecords"+"/"+subfileName+":/content";
         Log.e("check upload url","url "+URL);
 
         File audioFile = new File(filePath);

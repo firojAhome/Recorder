@@ -8,17 +8,14 @@ import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-
-import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.example.recorder.Home;
 import com.example.recorder.R;
-import com.example.recorder.onedrive.OneDrive;
 import com.example.recorder.storage.Preferences;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -41,7 +38,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-
+import static com.example.recorder.storage.Constant.Call_Records;
 
 
 public class GoogleDriveLogin extends AppCompatActivity{
@@ -139,7 +136,7 @@ public class GoogleDriveLogin extends AppCompatActivity{
 
                     mGoogleDriveService = new GoogleDriveService(googleDriveService);
 
-                    Preferences.checkedDriveButton(this,"isClicked",true);
+                    Preferences.checkedDriveButton(this,"Is_Clicked",true);
                     query();
 
                 })
@@ -166,8 +163,8 @@ public class GoogleDriveLogin extends AppCompatActivity{
                             Log.e("name", "arraylist name" + arrayListName);
 
                             switch (arrayListName) {
-                                case "Call Recorder":
-                                    Preferences.setDrviefolderId(this, "driveFolderName", drivList.get(i + 1).toString());
+                                case "Call Records":
+                                    Preferences.setDrviefolderId(this, "Google_Drive_Folder_Id", drivList.get(i + 1).toString());
                                     Log.e("check folder name "," "+arrayListName);
                                     Intent intent = new Intent(GoogleDriveLogin.this, Home.class);
                                     startActivity(intent);
@@ -187,17 +184,15 @@ public class GoogleDriveLogin extends AppCompatActivity{
     }
 
     private void createFolder() {
-        String driveFolderId = Preferences.getDriveFolderId(this, "driveFolderName");
+        String driveFolderId = Preferences.getDriveFolderId(this, "Google_Drive_Folder_Id");
         Log.e("driveFOlderID CHECK ", " " + driveFolderId);
         if (mGoogleDriveService != null){
             if (driveFolderId == null) {
-                mGoogleDriveService.createFolder(GoogleDriveLogin.this,"Call Recorder");
-
+                mGoogleDriveService.createFolder(GoogleDriveLogin.this,Call_Records);
                 startActivity(new Intent(this,Home.class));
+                Toast.makeText(this, "Logged into Google Drive successfully", Toast.LENGTH_SHORT).show();
                 finish();
             }
-
-            // createSubFolder(this);
 
         }
     }
@@ -207,14 +202,14 @@ public class GoogleDriveLogin extends AppCompatActivity{
         String fileDate = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
         Date date = new Date();
 
-        Long prefSaveDate = Preferences.getSubFolderDate(context, "subFolderDate");
+        Long prefSaveDate = Preferences.getSubFolderDate(context, "Google_Drive_Date");
         Log.e("prefDate", " " + prefSaveDate);
         Log.e("prefDate", "checkDate " + date.getDate());
 
         if (prefSaveDate != date.getDate()) {
-            Preferences.setSubFolderDate(context, "subFolderDate", date);
+            Preferences.setSubFolderDate(context, "Google_Drive_Date", date);
             mGoogleDriveService.createSubFolder(context,fileDate);
-            Log.e("ahofa","check"+Preferences.getSubFolderDate(context,"subFolderDate"));
+            Log.e("ahofa","check"+Preferences.getSubFolderDate(context,"Google_Drive_Date"));
         }
 
     }
@@ -284,7 +279,7 @@ public class GoogleDriveLogin extends AppCompatActivity{
 
             createSubFolder(context);
 
-            String subRootFolderId = Preferences.getDriveSubFolderId(context, "subFolderId");
+            String subRootFolderId = Preferences.getDriveSubFolderId(context, "Google_Drive_SubFolder_Id");
 
             Log.e("subfolder save Id",""+subRootFolderId);
 

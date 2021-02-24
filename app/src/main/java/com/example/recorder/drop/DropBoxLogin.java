@@ -7,11 +7,14 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.dropbox.core.android.Auth;
 import com.example.recorder.Home;
 import com.example.recorder.R;
 import com.example.recorder.storage.Preferences;
+
+import static com.example.recorder.storage.Constant.Drop_Box_Access_Token;
 
 
 public class DropBoxLogin extends AppCompatActivity {
@@ -64,6 +67,7 @@ public class DropBoxLogin extends AppCompatActivity {
             //Proceed to MainActivity
             Intent intent = new Intent(DropBoxLogin.this, Home.class);
             startActivity(intent);
+            Toast.makeText(this, "Logged into DropBox successfully", Toast.LENGTH_SHORT).show();
         }
     }
 

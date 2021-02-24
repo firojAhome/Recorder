@@ -5,55 +5,28 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.util.Pair;
-import android.widget.Toast;
-
-import com.example.recorder.Home;
 import com.example.recorder.storage.Preferences;
-import com.google.android.gms.drive.DriveApi;
-import com.google.android.gms.drive.DriveContents;
-import com.google.android.gms.drive.DriveFolder;
-import com.google.android.gms.drive.MetadataChangeSet;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.api.client.googleapis.media.MediaHttpUploader;
-import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
-import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.FileContent;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpHeaders;
-import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
 
-
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import static com.example.recorder.storage.Constant.Google_Drive_Folder_Id;
-import static com.example.recorder.storage.Constant.Google_Drive_SubFolder_Id;
 
 public class GoogleDriveService {
 
@@ -96,13 +69,13 @@ public class GoogleDriveService {
 // we have to share parent folder id the create
     public Task<String> createSubFolder(Context context, String subFolderName) {
 
-        String driveFolderId = Preferences.getDriveFolderId(context, "driveFolderName");
+        String driveFolderId = Preferences.getDriveFolderId(context, "Google_Drive_Folder_Id");
         Log.e("print drivefolderId"," "+driveFolderId);
         return Tasks.call(mExecutor, () -> {
             File metadata = new File()
                     .setParents(Collections.singletonList(driveFolderId))
-                    .setName(subFolderName)
-                    .setMimeType("application/vnd.google-apps.folder");
+                    .setMimeType("application/vnd.google-apps.folder")
+                    .setName(subFolderName);
 
             File googleFile = mDriveService.files().create(metadata).execute();
 
@@ -120,43 +93,6 @@ public class GoogleDriveService {
         });
     }
 
-   /* public void uploadFIleInDrive(String fileId, String name, String absolutePath){
-
-
-        AsyncTask<Void, Long, String> task = new AsyncTask<Void, Long, String>() {
-
-            @Override
-            protected String doInBackground(Void... voids) {
-
-                java.io.File fileContent = new java.io.File(absolutePath);
-                FileContent mediaContent = new FileContent("audio/mpeg", fileContent);
-
-
-                File metadata = new File()
-                        .setParents(Collections.singletonList(fileId))
-                        .setName(name)
-                        .setMimeType("audio/mpeg");
-
-                File file = null;
-                try {
-                    file = mDriveService.files().create(metadata, mediaContent).setFields("id").execute();
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                Log.e("uploadfile name",""+file.getName());
-                return file.getName();
-            }
-
-            @Override
-            protected void onPostExecute(String s) {
-                super.onPostExecute(s);
-                Toast.makeText(context, "Successfull!", Toast.LENGTH_SHORT).show();
-            }
-
-        };
-    }*/
 
     public Task<String> uploadFile(Context context,String name, String absolutePath) {
         return Tasks.call(mExecutor, () -> {
@@ -224,40 +160,6 @@ public class GoogleDriveService {
             }
         });
     }
-
-    /*public void storeData(String fileId, String name, String filePath){
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-
-                File body = new File();
-                body.setName(name);
-                body.setMimeType("application/vnd.google-apps.audio");
-                body.setParents(Collections.singletonList(fileId));
-
-                HttpHeaders header = new HttpHeaders();
-                header.setContentLength(0L);
-                header.setContentType(filePath);
-                header.set("X-Upload-Content-Type","image/jpeg");
-
-                try {
-                    HttpResponse response= mDriveService
-                            .files()
-                            .create(body)
-                            .setRequestHeaders(header)
-                            .set("uploadType","resumable")
-                            .buildHttpRequest()
-                            .execute();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-
-            }
-        });
-        thread.start();
-    }*/
-
 
 
     public Task<FileList> queryFiles() {

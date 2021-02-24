@@ -14,6 +14,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
@@ -32,10 +33,15 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import static com.example.recorder.callEvent.App.CHANNEL_ID;
+import static com.example.recorder.storage.Constant.Call_Records;
+import static com.example.recorder.storage.Constant.Drop_Box_Access_Token;
+import static com.example.recorder.storage.Constant.Is_One_DriveLogIn;
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 public class PhoneStateReceiver extends Service{
@@ -46,10 +52,10 @@ public class PhoneStateReceiver extends Service{
     private final Handler mHandler = new Handler();
     String time;
 
+
     Home home = new Home();
     Context applicationContext = Home.getContextOfApplication();
 
-    private static final String TAG = "PhoneStateReceiver";
     private MediaRecorder recorder = null;
     private File tempFile;
     String callNumber,filePath,audioPath;
@@ -107,13 +113,14 @@ public class PhoneStateReceiver extends Service{
     public int onStartCommand(Intent intent, int flags, int startId) {
          super.onStartCommand(intent, flags, startId);
 
-//         String input = intent.getStringExtra("input extrat");
+         String input = intent.getStringExtra("inputExtra");
 
-        Intent notificationIntent = new Intent(this,Home.class);
-         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+         Intent notificationIntent = new Intent(applicationContext,Home.class);
+         PendingIntent pendingIntent = PendingIntent.getActivity(applicationContext, 0, notificationIntent, 0);
 
          Notification notification = new NotificationCompat.Builder(this,CHANNEL_ID)
                 .setContentTitle("Foreground Service")
+                 .setContentText(input)
                 .setContentIntent(pendingIntent)
                 .build();
          startForeground(1, notification);
@@ -125,7 +132,6 @@ public class PhoneStateReceiver extends Service{
     public void stopForegroundService() {
         Log.e("TAG_FOREGROUND_SERVICE", "Stop foreground service.");
 
-        // Stop foreground service and remove the notification.
 //        stopForeground(true);
 
         // Stop the foreground service.
@@ -135,8 +141,8 @@ public class PhoneStateReceiver extends Service{
     private void startRecording(String number, Date date) {
 
         String fileDate = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
-        File dateDir = new File(Environment.getExternalStorageDirectory(),"/CallRecords/"+fileDate);
-        File sampleDir = new File(Environment.getExternalStorageDirectory(), "/CallRecords");
+        File dateDir = new File(Environment.getExternalStorageDirectory(),"/"+Call_Records+"/"+fileDate);
+        File sampleDir = new File(Environment.getExternalStorageDirectory(), "/"+Call_Records+"");
         if (!sampleDir.exists()) {
             sampleDir.mkdir();
         } if (!dateDir.exists()){
@@ -200,11 +206,15 @@ public class PhoneStateReceiver extends Service{
         }
 
         if(audioPath != null){
-            shareInStorage();
+            try {
+                shareInStorage();
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    private void shareInStorage() {
+    private void shareInStorage() throws UnsupportedEncodingException {
         Log.e("check ","storage"+Preferences.getRadioIndex(getApplicationContext(),"radioIndex"));
         String prefToken = Preferences.getDropBoxAccessToken(applicationContext,"Drop_Box_Access_Token");
         switch (Preferences.getRadioIndex(getApplicationContext(),"radioIndex")){
@@ -216,14 +226,19 @@ public class PhoneStateReceiver extends Service{
                 }
                 break;
             case 1:
-                home.storeInDropBox(getApplicationContext(),callNumber,audioPath,prefToken);
+                if (prefToken != null){
+                    home.storeInDropBox(getApplicationContext(),callNumber,audioPath,prefToken);
+                }
                 break;
             case 2:
                 Log.e("check ","log 3");
-                String folderTime = new SimpleDateFormat(" dd-MM-yyyy hh-mm-ss").format(new Date());
-                String oneDriveFileName = callNumber+folderTime+".mp3".trim();
                 OneDrive oneDrive = new OneDrive();
-                oneDrive.silentOneDriveStorage(getApplicationContext(),oneDriveFileName,audioPath);
+                if (Preferences.isOneDriveLogin(this,"Is_One_DriveLogIn")){
+                    String folderTime = new SimpleDateFormat("_dd-MM-yyyy_hh_mm_ss").format(new Date());
+//                    String s = URLEncoder.encode(folderTime,"UTF-8");
+                    String oneDriveFileName = callNumber+folderTime+".mp3".trim();
+                    oneDrive.silentOneDriveStorage(getApplicationContext(),oneDriveFileName,audioPath);
+                }
                 break;
             case 3:
                 break;
@@ -241,13 +256,14 @@ public class PhoneStateReceiver extends Service{
 
         @Override
         public void onReceive(Context context, Intent intent)   {
-            //We listen to two intents.  The new outgoing call only tells us of an outgoing call.  We use it to get the number.
-            if (intent.getAction().equals("android.intent.action.NEW_OUTGOING_CALL")) {
+
+           if (intent.getAction().equals("android.intent.action.NEW_OUTGOING_CALL")) {
                 savedNumber = intent.getExtras().getString("android.intent.extra.PHONE_NUMBER");
             } else {
                 String stateStr = intent.getExtras().getString(TelephonyManager.EXTRA_STATE);
 
-                 savedNumber = intent.getExtras().getString(TelephonyManager.EXTRA_INCOMING_NUMBER);
+                savedNumber = intent.getExtras().getString(TelephonyManager.EXTRA_INCOMING_NUMBER);
+
                 int state = 0;
                 if (stateStr.equals(TelephonyManager.EXTRA_STATE_IDLE)) {
                     state = TelephonyManager.CALL_STATE_IDLE;
@@ -280,11 +296,10 @@ public class PhoneStateReceiver extends Service{
                     callStartTime = new Date();
                     savedNumber = number;
                     onIncomingCallReceived(context, savedNumber, callStartTime);
-                    startRecording(savedNumber, callStartTime);
+//                    startRecording(savedNumber, callStartTime);
                     break;
 
                 case TelephonyManager.CALL_STATE_OFFHOOK:
-                    //Transition of ringing->offhook are pickups of incoming calls.  Nothing done on them
                     if(lastState != TelephonyManager.CALL_STATE_RINGING){
                         isIncoming = false;
                         callStartTime = new Date();
@@ -294,7 +309,6 @@ public class PhoneStateReceiver extends Service{
                         }
                     break;
                 case TelephonyManager.CALL_STATE_IDLE:
-                    //Went to idle-  this is the end of a call.  What type depends on previous state(s)
                     if(lastState == TelephonyManager.CALL_STATE_RINGING){
                         //Ring but no pickup-  a miss
                         onMissedCall(context, savedNumber, callStartTime);
@@ -360,10 +374,11 @@ public class PhoneStateReceiver extends Service{
     @Override
     public void onDestroy() {
 
-        stopForegroundService();
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(new CallReceiver());
-//        this.unregisterReceiver(new CallReceiver());
+//        stopForegroundService();
+//        LocalBroadcastManager.getInstance(this).unregisterReceiver(new CallReceiver());
+        this.unregisterReceiver(new CallReceiver());
         super.onDestroy();
     }
 
+//    https://github.com/judemanutd/AutoStarter  .../autostart permission
 }

@@ -11,6 +11,33 @@
     tools:context=".Home">
 
 
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:theme="?actionBarTheme"
+                android:minHeight="?attr/actionBarSize"
+                app:navigationIcon="@drawable/menu"/>
+
+
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchButton"
+                android:layout_width="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="Recording"
+                />
+
+
+        </RelativeLayout>
+
 
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
@@ -18,38 +45,10 @@
         android:layout_height="match_parent"
         app:headerLayout="@layout/header"
         app:menu="@menu/drawer_view"
-        android:layout_gravity="start">
+        android:fitsSystemWindows="true"
+        android:layout_gravity="start"/>
 
 
-    </com.google.android.material.navigation.NavigationView>
-
-
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:theme="?actionBarTheme"
-            android:minHeight="?attr/actionBarSize"
-            app:navigationIcon="@drawable/menu"/>
-
-
-
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/switchButton"
-            android:layout_width="wrap_content"
-            android:layout_centerInParent="true"
-            android:layout_height="wrap_content"
-            android:checked="false"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Recording"
-            />
-
-
-    </RelativeLayout>
 
 
 </androidx.drawerlayout.widget.DrawerLayout>

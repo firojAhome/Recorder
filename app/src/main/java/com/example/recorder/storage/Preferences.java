@@ -47,7 +47,7 @@ public class Preferences {
         return sharedPreferences.getInt(keyValue, 3);
     }
 
-
+// drive
     public static void setDrviefolderId(Context context, String key, String value){
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor editor = settings.edit();
@@ -60,7 +60,6 @@ public class Preferences {
         return sharedPreferences.getString(keyValue, null);
     }
 
-    //drive
     public static void setSubFolderDate(Context context, String key, Date value){
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor editor = settings.edit();
@@ -124,5 +123,32 @@ public class Preferences {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         return sharedPreferences.getBoolean(keyValue, false);
     }
+
+    //auto start permission
+    public static void setAutoStartPermission(Context context, String key, boolean value){
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putBoolean(key, value);
+        editor.apply();
+    }
+
+    public static boolean getAutoStartPermission(Context context, String keyValue){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return sharedPreferences.getBoolean(keyValue, false);
+    }
+
+
+    public static void setServiceStart(Context context, String key, boolean value){
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putBoolean(key, value);
+        editor.apply();
+    }
+
+    public static boolean getServiceInfo(Context context, String keyValue){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return sharedPreferences.getBoolean(keyValue, false);
+    }
+
 
 }
