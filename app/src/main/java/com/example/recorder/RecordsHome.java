@@ -23,10 +23,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
@@ -141,20 +143,12 @@ public class RecordsHome extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_records_home);
+        setContentView(R.layout.activity_record_home);
 
         contextOfApplication = getApplicationContext();
         //permission
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
 
-        //auto start permission
-//        if (!Preferences.getAutoStartPermission(this,"PREF_KEY_APP_AUTO_START")){
-//            AutoStartPermissionHelper.getInstance().getAutoStartPermission(this);
-////            AutoStartHelper.getInstance().getAutoStartPermission(this);
-//            Preferences.setAutoStartPermission(this,"PREF_KEY_APP_AUTO_START",true);
-//        }
-
-        //one drive
         mSingAccountClint(this);
 
         //client secret  S99n52ETvRg2aYxLUsVsdPhr
@@ -165,12 +159,13 @@ public class RecordsHome extends AppCompatActivity {
                 .build();
 
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
-
-
+//
+//
         hooks();
         checkSwitchCompact();
         selectRadioButton();
     }
+
 
     public static Context getContextOfApplication(){
         return contextOfApplication;
@@ -209,7 +204,7 @@ public class RecordsHome extends AppCompatActivity {
 
 
     private void checkSwitchCompact() {
-
+        LinearLayout recording_layout = (LinearLayout) findViewById(R.id.recording_layout);
         SharedPreferences sharedPreferences = getSharedPreferences("save", MODE_PRIVATE);
         switchCompat.setChecked(sharedPreferences.getBoolean("value", true));
         switchCompat.setOnClickListener(new View.OnClickListener() {
@@ -222,7 +217,9 @@ public class RecordsHome extends AppCompatActivity {
                     Preferences.setServiceStart(RecordsHome.this,"service",true);
                     Toast.makeText(RecordsHome.this, "Call recording start!", Toast.LENGTH_SHORT).show();
                     editor.apply();
-
+                    recording_layout.setBackgroundResource(R.drawable.orange_card);
+                    TextView switchLabel = (TextView) findViewById(R.id.recoroding_label);
+                    switchLabel.setText("Recording on");
                 } else {
                     //unchecked
                     SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
@@ -232,6 +229,10 @@ public class RecordsHome extends AppCompatActivity {
                     Toast.makeText(RecordsHome.this, "Call recording off!", Toast.LENGTH_SHORT).show();
                     editor.apply();
                     stopService();
+
+                    recording_layout.setBackgroundResource(R.drawable.inactive_orange_card);
+                    TextView switchLabel = (TextView) findViewById(R.id.recoroding_label);
+                    switchLabel.setText("Recording off");
                 }
 
             }
@@ -241,6 +242,13 @@ public class RecordsHome extends AppCompatActivity {
             Preferences.setServiceStart(RecordsHome.this,"service",true);
             Intent intent = new Intent(this, PhoneStateReceiver.class);
             startService(intent);
+            recording_layout.setBackgroundResource(R.drawable.orange_card);
+            TextView switchLabel = (TextView) findViewById(R.id.recoroding_label);
+            switchLabel.setText("Recording on");
+        }else{
+            recording_layout.setBackgroundResource(R.drawable.inactive_orange_card);
+            TextView switchLabel = (TextView) findViewById(R.id.recoroding_label);
+            switchLabel.setText("Recording off");
         }
     }
 
@@ -273,7 +281,6 @@ public class RecordsHome extends AppCompatActivity {
                     Preferences.setRadioIndex(getApplicationContext(),"radioIndex",3);
                     setChecked();
                 }
-
             }
         });
         relativeDrop.setOnClickListener(new View.OnClickListener() {
@@ -291,7 +298,6 @@ public class RecordsHome extends AppCompatActivity {
                     setChecked();
 
                 }
-
             }
         });
         relativeOne.setOnClickListener(new View.OnClickListener() {
@@ -319,7 +325,6 @@ public class RecordsHome extends AppCompatActivity {
                 oneDrive.setChecked(false);
                 local.setChecked(true);
                 Preferences.setRadioIndex(getApplicationContext(),"radioIndex",3);
-
             }
         });
 
@@ -327,6 +332,13 @@ public class RecordsHome extends AppCompatActivity {
     }
 
     private void setChecked() {
+
+        LinearLayout googledrive_layout = (LinearLayout) findViewById(R.id.googledrive_layout);
+        LinearLayout dropbox_layout = (LinearLayout) findViewById(R.id.dropbox_layout);
+        LinearLayout onedrive_layout = (LinearLayout) findViewById(R.id.onedrive_layout);
+        LinearLayout localstorage_layout = (LinearLayout) findViewById(R.id.localstorage_layout);
+
+
         int radioIndex = Preferences.getRadioIndex(this,"radioIndex");
         Log.e("check id",""+radioIndex);
         switch (radioIndex){
@@ -336,12 +348,23 @@ public class RecordsHome extends AppCompatActivity {
                 dropBox.setChecked(false);
                 oneDrive.setChecked(false);
                 local.setChecked(false);
+
+                googledrive_layout.setBackgroundResource(R.drawable.active_card);
+                dropbox_layout.setBackgroundResource(R.drawable.inactive_card);
+                onedrive_layout.setBackgroundResource(R.drawable.inactive_card);
+                localstorage_layout.setBackgroundResource(R.drawable.inactive_card);
+
                 break;
             case 1:
                 google.setChecked(false);
                 dropBox.setChecked(true);
                 oneDrive.setChecked(false);
                 local.setChecked(false);
+
+                dropbox_layout.setBackgroundResource(R.drawable.active_card);
+                googledrive_layout.setBackgroundResource(R.drawable.inactive_card);
+                onedrive_layout.setBackgroundResource(R.drawable.inactive_card);
+                localstorage_layout.setBackgroundResource(R.drawable.inactive_card);
 
                 break;
             case 2:
@@ -350,12 +373,22 @@ public class RecordsHome extends AppCompatActivity {
                 oneDrive.setChecked(true);
                 local.setChecked(false);
 
+                onedrive_layout.setBackgroundResource(R.drawable.active_card);
+                dropbox_layout.setBackgroundResource(R.drawable.inactive_card);
+                googledrive_layout.setBackgroundResource(R.drawable.inactive_card);
+                localstorage_layout.setBackgroundResource(R.drawable.inactive_card);
+
                 break;
             case 3:
                 google.setChecked(false);
                 dropBox.setChecked(false);
                 oneDrive.setChecked(false);
                 local.setChecked(true);
+
+                localstorage_layout.setBackgroundResource(R.drawable.active_card);
+                dropbox_layout.setBackgroundResource(R.drawable.inactive_card);
+                onedrive_layout.setBackgroundResource(R.drawable.inactive_card);
+                googledrive_layout.setBackgroundResource(R.drawable.inactive_card);
 
                 break;
 
