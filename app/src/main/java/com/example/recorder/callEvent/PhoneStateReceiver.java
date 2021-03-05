@@ -14,7 +14,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
@@ -22,11 +21,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-
-import com.example.recorder.Home;
-import com.example.recorder.google.GoogleDriveLogin;
-import com.example.recorder.onedrive.OneDrive;
+import com.example.recorder.RecordsHome;
 import com.example.recorder.storage.Preferences;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -34,27 +29,23 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import static com.example.recorder.callEvent.App.CHANNEL_ID;
 import static com.example.recorder.storage.Constant.Call_Records;
-import static com.example.recorder.storage.Constant.Drop_Box_Access_Token;
-import static com.example.recorder.storage.Constant.Is_One_DriveLogIn;
-
 @RequiresApi(api = Build.VERSION_CODES.O)
 public class PhoneStateReceiver extends Service{
 
-    GoogleDriveLogin googleDriveLogin = new GoogleDriveLogin();
+
     private Looper serviceLooper;
     private ServiceHandler serviceHandler;
     private final Handler mHandler = new Handler();
     String time;
 
 
-    Home home = new Home();
-    Context applicationContext = Home.getContextOfApplication();
+    RecordsHome recordsHome = new RecordsHome();
+    Context applicationContext = recordsHome.getContextOfApplication();
 
     private MediaRecorder recorder = null;
     private File tempFile;
@@ -80,9 +71,7 @@ public class PhoneStateReceiver extends Service{
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-
         }
-
     }
 
 
@@ -113,14 +102,13 @@ public class PhoneStateReceiver extends Service{
     public int onStartCommand(Intent intent, int flags, int startId) {
          super.onStartCommand(intent, flags, startId);
 
-         String input = intent.getStringExtra("inputExtra");
+//         String input = intent.getStringExtra("inputExtra");
 
-         Intent notificationIntent = new Intent(applicationContext,Home.class);
-         PendingIntent pendingIntent = PendingIntent.getActivity(applicationContext, 0, notificationIntent, 0);
+         Intent notificationIntent = new Intent(getApplicationContext(),RecordsHome.class);
+         PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, 0);
 
-         Notification notification = new NotificationCompat.Builder(this,CHANNEL_ID)
+         Notification notification = new NotificationCompat.Builder(getApplicationContext(),CHANNEL_ID)
                 .setContentTitle("Foreground Service")
-                 .setContentText(input)
                 .setContentIntent(pendingIntent)
                 .build();
          startForeground(1, notification);
@@ -133,8 +121,6 @@ public class PhoneStateReceiver extends Service{
         Log.e("TAG_FOREGROUND_SERVICE", "Stop foreground service.");
 
 //        stopForeground(true);
-
-        // Stop the foreground service.
         stopSelf();
     }
 
@@ -206,38 +192,33 @@ public class PhoneStateReceiver extends Service{
         }
 
         if(audioPath != null){
-            try {
-                shareInStorage();
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
+            shareInStorage();
         }
     }
 
-    private void shareInStorage() throws UnsupportedEncodingException {
+    private void shareInStorage(){
         Log.e("check ","storage"+Preferences.getRadioIndex(getApplicationContext(),"radioIndex"));
-        String prefToken = Preferences.getDropBoxAccessToken(applicationContext,"Drop_Box_Access_Token");
+        String prefToken = Preferences.getDropBoxAccessToken(getApplicationContext(),"Drop_Box_Access_Token");
         switch (Preferences.getRadioIndex(getApplicationContext(),"radioIndex")){
             case 0:
                 GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
                 if (acct != null) {
                     String folderName = callNumber+" "+time;
-                    googleDriveLogin.startDriveStorage(getApplicationContext(),folderName,audioPath);
+                    recordsHome.startDriveStorage(getApplicationContext(),folderName,audioPath);
                 }
                 break;
             case 1:
                 if (prefToken != null){
-                    home.storeInDropBox(getApplicationContext(),callNumber,audioPath,prefToken);
+                    recordsHome.storeInDropBox(getApplicationContext(),callNumber,audioPath,prefToken);
                 }
                 break;
             case 2:
                 Log.e("check ","log 3");
-                OneDrive oneDrive = new OneDrive();
                 if (Preferences.isOneDriveLogin(this,"Is_One_DriveLogIn")){
                     String folderTime = new SimpleDateFormat("_dd-MM-yyyy_hh_mm_ss").format(new Date());
 //                    String s = URLEncoder.encode(folderTime,"UTF-8");
                     String oneDriveFileName = callNumber+folderTime+".mp3".trim();
-                    oneDrive.silentOneDriveStorage(getApplicationContext(),oneDriveFileName,audioPath);
+                    recordsHome.silentOneDriveStorage(getApplicationContext(),oneDriveFileName,audioPath);
                 }
                 break;
             case 3:
@@ -376,7 +357,7 @@ public class PhoneStateReceiver extends Service{
 
 //        stopForegroundService();
 //        LocalBroadcastManager.getInstance(this).unregisterReceiver(new CallReceiver());
-        this.unregisterReceiver(new CallReceiver());
+//        getApplicationContext().unregisterReceiver(new CallReceiver());
         super.onDestroy();
     }
 

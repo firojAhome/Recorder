@@ -28,10 +28,9 @@
         android:theme="@style/Theme.Recorder"
         android:usesCleartextTraffic="true"
         tools:replace="android:theme">
-        <activity android:name=".onedrive.OneDrive"></activity>
-        <activity
-            android:name=".google.GoogleDriveLogin"
-            android:usesCleartextTraffic="true" />
+        <activity android:name=".RecordsHome"
+            android:usesCleartextTraffic="true">
+        </activity>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
@@ -40,17 +39,12 @@
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
 
-        <activity android:name=".drop.DropBoxLogin" />
-        <activity android:name=".Setting" />
-        <activity android:name=".Home" />
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <!-- Dropbox AuthActivity -->
         <activity
             android:name="com.dropbox.core.android.AuthActivity"
@@ -74,8 +68,8 @@
             android:name=".callEvent.PhoneStateReceiver"
             android:enabled="true"
             android:exported="true"
-            tools:ignore="ExportedService"
-            android:foregroundServiceType="microphone">
+            android:foregroundServiceType="microphone"
+            tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
@@ -93,12 +87,9 @@
                 <data
                     android:host="com.example.recorder"
                     android:path="/h8CU+6EM+5Pq2B3fm8Hwvw0ioas="
-                    android:scheme="msauth" />
+                    android:scheme="msauth"/>
             </intent-filter>
         </activity>
-
-
-
     </application>
 
 </manifest>
