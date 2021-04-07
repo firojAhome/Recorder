@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.PermissionChecker;
 
 import android.Manifest;
 import android.accounts.Account;
@@ -88,6 +89,7 @@ public class RecordsHome extends AppCompatActivity {
     RadioGroup radioGroup;
     SwitchCompat switchCompat;
     Toolbar toolbar;
+    LinearLayout recording_layout;
 
     //radio button
     RadioButton google;
@@ -115,7 +117,7 @@ public class RecordsHome extends AppCompatActivity {
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
     private boolean permissionToRecordAccepted = false;
     private String[] permissions = {Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.READ_PHONE_STATE,Manifest.permission.READ_EXTERNAL_STORAGE};
+            Manifest.permission.READ_PHONE_STATE,Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.READ_CALL_LOG};
 
     //drive service helper
     public static Context contextOfApplication;
@@ -127,10 +129,11 @@ public class RecordsHome extends AppCompatActivity {
 
         switch (requestCode) {
             case REQUEST_RECORD_AUDIO_PERMISSION:
-                permissionToRecordAccepted = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                permissionToRecordAccepted = grantResults[4] == PackageManager.PERMISSION_GRANTED;
                 break;
         }
         if (!permissionToRecordAccepted) finish();
+
     }
 
 
@@ -166,6 +169,7 @@ public class RecordsHome extends AppCompatActivity {
     }
 
     private void hooks() {
+        recording_layout =  findViewById(R.id.recording_layout);
         radioGroup = findViewById(R.id.home_radio_group);
         switchCompat = findViewById(R.id.switchButton);
         toolbar = findViewById(R.id.toolbar);
@@ -208,7 +212,7 @@ public class RecordsHome extends AppCompatActivity {
 
 
     private void checkSwitchCompact() {
-        LinearLayout recording_layout = (LinearLayout) findViewById(R.id.recording_layout);
+
         SharedPreferences sharedPreferences = getSharedPreferences("save", MODE_PRIVATE);
         switchCompat.setChecked(sharedPreferences.getBoolean("value", true));
         switchCompat.setOnClickListener(new View.OnClickListener() {
@@ -217,10 +221,11 @@ public class RecordsHome extends AppCompatActivity {
             public void onClick(View v) {
                 if (switchCompat.isChecked()) {
                     SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
-                    editor.putBoolean("value", true);
                     Preferences.setServiceStart(RecordsHome.this,"service",true);
-                    Toast.makeText(RecordsHome.this, "Call recording start!", Toast.LENGTH_SHORT).show();
+                    editor.putBoolean("value", true);
+                    startService();
                     editor.apply();
+
                     recording_layout.setBackgroundResource(R.drawable.orange_card);
                     TextView switchLabel = (TextView) findViewById(R.id.recoroding_label);
                     switchLabel.setText("Recording on");
@@ -230,7 +235,7 @@ public class RecordsHome extends AppCompatActivity {
                     editor.putBoolean("value", false);
                     switchCompat.setChecked(false);
                     Preferences.setServiceStart(RecordsHome.this,"service",false);
-                    Toast.makeText(RecordsHome.this, "Call recording off!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RecordsHome.this, "Call recording off", Toast.LENGTH_SHORT).show();
                     editor.apply();
                     stopService();
 
@@ -257,12 +262,21 @@ public class RecordsHome extends AppCompatActivity {
     }
 
     private void startService() {
-        Intent intent = new Intent(this, PhoneStateReceiver.class);
-//        Intent broadcastIntent = new Intent();
-//        broadcastIntent.setAction("restartservice");
-//        broadcastIntent.setClass(this, PhoneStateReceiver.Restarter.class);
-//        this.sendBroadcast(broadcastIntent);
-        startService(intent);
+        if((PermissionChecker.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)  == PermissionChecker.PERMISSION_GRANTED) &&
+                (PermissionChecker.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)  == PermissionChecker.PERMISSION_GRANTED) &&
+                (PermissionChecker.checkSelfPermission(this, Manifest.permission.READ_CALL_LOG)  == PermissionChecker.PERMISSION_GRANTED) &&
+                (PermissionChecker.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)  == PermissionChecker.PERMISSION_GRANTED)){
+
+            Intent intent = new Intent(this, PhoneStateReceiver.class);
+            startService(intent);
+            Toast.makeText(RecordsHome.this, "Call recording start", Toast.LENGTH_SHORT).show();
+
+        } else {
+            SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
+            editor.putBoolean("value", false);
+//            checkSwitchCompact();
+            Toast.makeText(this, "please accept the permission accepted", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)

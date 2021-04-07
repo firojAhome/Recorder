@@ -23,6 +23,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -36,7 +37,6 @@ import com.ahom.callrecorder.RecordsHome;
 import com.ahom.callrecorder.storage.Preferences;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -108,24 +108,8 @@ public class PhoneStateReceiver extends Service {
         serviceLooper = mHandler.getLooper();
         serviceHandler = new ServiceHandler(serviceLooper);
 
-
     }
 
-//    public void startTimer() {
-//        timer = new Timer();
-//        timerTask = new TimerTask() {
-//            public void run() {
-//                Log.i("Count", "=========  "+ (counter++));
-//            }
-//        };
-//        timer.schedule(timerTask, 1000, 1000); //
-//    }
-//    public void stoptimertask() {
-//        if (timer != null) {
-//            timer.cancel();
-//            timer = null;
-//        }
-//    }
 
     @Nullable
     @Override
@@ -147,7 +131,6 @@ public class PhoneStateReceiver extends Service {
                 .setContentTitle("Foreground Service")
                 .setContentIntent(pendingIntent)
                 .build();
-
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             startMyOwnForeground();
@@ -237,6 +220,7 @@ public class PhoneStateReceiver extends Service {
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
         int len = filePath.length() - (44 + file_name.length());
         audioPath = filePath.substring(0, filePath.length() - len) + ".mp3";
+        Log.e("show phone state","audio path"+audioPath);
         recorder.setOutputFile(audioPath);
 
         try {
@@ -252,7 +236,6 @@ public class PhoneStateReceiver extends Service {
 
     }
 
-
     private void stopRecording() {
         if (recordStarted) {
             try {
@@ -262,7 +245,7 @@ public class PhoneStateReceiver extends Service {
             }
             recordStarted = false;
         }
-
+        Log.e("show phone state","audio path"+audioPath);
         if (audioPath != null) {
             shareInStorage();
         }
@@ -291,6 +274,7 @@ public class PhoneStateReceiver extends Service {
 //                    String s = URLEncoder.encode(folderTime,"UTF-8");
                     String oneDriveFileName = callNumber + folderTime + ".mp3".trim();
                     recordsHome.silentOneDriveStorage(getApplicationContext(), oneDriveFileName, audioPath);
+                    Log.e("show phone state","audio path"+audioPath);
                 }
                 break;
             case 3:
@@ -310,43 +294,39 @@ public class PhoneStateReceiver extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            TelephonyManager telephony = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE);
-            PhoneStateListener customPhoneListener = new PhoneStateListener();
-            telephony.listen(customPhoneListener,   PhoneStateListener.LISTEN_CALL_STATE);
+            String stateStr = intent.getExtras().getString(TelephonyManager.EXTRA_STATE);
+            if(Build.VERSION.SDK_INT >= 26 && intent!=null && intent.getExtras() !=null
+                    && TextUtils.isEmpty(intent.getExtras().getString("incoming_number"))){
+                return;
+            }
+
             Bundle bundle = intent.getExtras();
             String phoneNr= bundle.getString("incoming_number");
 
-            String stateStr = intent.getExtras().getString(TelephonyManager.EXTRA_STATE);
-            savedNumber = intent.getStringExtra("incoming_number");
+            String phoneNumber = intent.getStringExtra("incoming_number");
+            if (!phoneNumber.equals(null)){
+                savedNumber = phoneNumber;
+            }
             Log.e("print "," mail EXTRA "+intent.getStringExtra("incoming_number"));
             Log.e("print "," mail EXTRA "+intent.getExtras());
             Log.e("print "," mail phoneNr "+phoneNr);
 
-            /*savedNumber = intent.getExtras().getString(TelephonyManager.EXTRA_INCOMING_NUMBER);
-            if (intent.getAction().equals("android.intent.action.NEW_OUTGOING_CALL")) {
-                savedNumber = intent.getExtras().getString("android.intent.extra.PHONE_NUMBER");
-            savedNumber = intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER);
-                Log.e("show outgoing number 1",""+savedNumber);
-
-            } else {
-                savedNumber = intent.getExtras().getString(TelephonyManager.EXTRA_INCOMING_NUMBER);
-                Log.e("check","incoming");
-            }*/
 
             int state = 0;
             if (stateStr.equals(TelephonyManager.EXTRA_STATE_IDLE)) {
                 state = TelephonyManager.CALL_STATE_IDLE;
-                Log.e("looper","looper event");
+                Log.e("looper","looper event idle"+state);
+                stopRecording();
 
             } else if (stateStr.equals(TelephonyManager.EXTRA_STATE_OFFHOOK)) {
                 state = TelephonyManager.CALL_STATE_OFFHOOK;
-                Log.e("looper","looper event");
+                Log.e("looper","looper event hook"+state);
+                onCallStateChanged(context, state, savedNumber);
 
             } else if (stateStr.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
                 state = TelephonyManager.CALL_STATE_RINGING;
-                Log.e("looper","looper event");
+                Log.e("looper","looper event ringing"+state);
             }
-            onCallStateChanged(context, state, savedNumber);
 
         }
 
@@ -364,7 +344,7 @@ public class PhoneStateReceiver extends Service {
                     callStartTime = new Date();
                     savedNumber = number;
                     onIncomingCallReceived(context, savedNumber, callStartTime);
-                    startRecording(savedNumber, callStartTime);
+                    startRecording(savedNumber,callStartTime);
                     break;
 
                 case TelephonyManager.CALL_STATE_OFFHOOK:
