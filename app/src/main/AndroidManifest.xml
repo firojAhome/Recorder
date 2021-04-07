@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.example.recorder">
+    package="com.ahom.callrecorder">
 
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
@@ -11,12 +11,13 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.STORAGE" />
-    <uses-permission
-        android:name="android.permission.READ_PHONE_STATE"
-        android:maxSdkVersion="29" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+
     <uses-permission android:name="android.permissions.READ_PHONE_NUMBERS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+<!--    key store details key-0 , pass - ahom@123-->
 
     <application
         android:allowBackup="true"
@@ -27,24 +28,28 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Recorder"
         android:usesCleartextTraffic="true"
+        android:requestLegacyExternalStorage="true"
         tools:replace="android:theme">
-        <activity android:name=".RecordsHome"
+
+        <activity android:name="com.ahom.callrecorder.RecordsHome"
             android:usesCleartextTraffic="true">
+
         </activity>
 
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyARwx1HYrg3TxQHmJkxjGwTu1UekKOs14w" />
-        <meta-data
-            android:name="com.google.android.gms.version"
-            android:value="@integer/google_play_services_version" />
-
-        <activity android:name=".MainActivity">
+        <activity android:name="com.ahom.callrecorder.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
         </activity>
+
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyA5DWeIDnFD0VCsLym8Oy4oZAs6zzREhDY"/>
+
+
         <!-- Dropbox AuthActivity -->
         <activity
             android:name="com.dropbox.core.android.AuthActivity"
@@ -52,7 +57,7 @@
             android:launchMode="singleTask">
             <intent-filter>
                 <!-- Insert your app key after “db-  ...” -->
-                <data android:scheme="db-zdsm97h628ogspg" />
+                <data android:scheme="db-abx7y6xhqo06wp4" />
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -64,32 +69,46 @@
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
 
+
         <service
-            android:name=".callEvent.PhoneStateReceiver"
+            android:name="com.ahom.callrecorder.callEvent.PhoneStateReceiver"
             android:enabled="true"
-            android:exported="true"
-            android:foregroundServiceType="microphone"
-            tools:ignore="ExportedService">
+            android:exported="false"
+            android:foregroundServiceType="microphone">
+
             <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
+
+            <intent-filter>
+                <category android:name="com.example.autostart.CATEGORY_AUTOSTART"/>
+                <action android:name="com.example.autostart.ACTION_IMPLICIT_BROADCAST"/>
+                <action android:name="com.example.autostart.ACTION_EXPLICIT_BROADCAST"/>
+            </intent-filter>
+
         </service>
+
 
         <uses-library
             android:name="org.apache.http.legacy"
-            android:required="false" /> <!-- one drive -->
+            android:required="false" />
+
+        <!-- one drive -->
         <activity android:name="com.microsoft.identity.client.BrowserTabActivity">
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
-                <data
-                    android:host="com.example.recorder"
-                    android:path="/h8CU+6EM+5Pq2B3fm8Hwvw0ioas="
-                    android:scheme="msauth"/>
+                    <data
+                        android:host="com.ahom.callrecorder"
+                        android:path="/I+KNX6ln4QF8gZs0Zf/X6kSUwYw="
+                        android:scheme="msauth"/>
             </intent-filter>
+
         </activity>
+
+
     </application>
 
 </manifest>

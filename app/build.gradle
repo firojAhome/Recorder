@@ -16,7 +16,7 @@ android {
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        applicationId "com.example.recorder"
+        applicationId "com.ahom.callrecorder"
         minSdkVersion 16
         targetSdkVersion 30
         versionCode 1
@@ -31,7 +31,6 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
-
 
     }
 
@@ -79,11 +78,9 @@ dependencies {
 
     //material
     implementation 'com.google.android.material:material:1.2.0-alpha1'
-//    implementation'com.makeramen:roundedimageview:2.3.0'
 
     //google
     implementation 'com.google.android.gms:play-services-auth:19.0.0'
-//    implementation 'com.google.android.gms:play-services-drive:11.6.0'
     implementation 'com.google.http-client:google-http-client-gson:1.26.0'
     implementation 'com.google.api-client:google-api-client:1.30.5'
     implementation 'com.google.api-client:google-api-client-android:1.30.5'
@@ -107,4 +104,5 @@ dependencies {
 
     //library for auto start permission
     implementation 'com.github.judemanutd:autostarter:1.0.8'
+
 }

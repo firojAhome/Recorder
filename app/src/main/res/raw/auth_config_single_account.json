@@ -1,16 +1,16 @@
 {
-  "client_id" : "05e4ded4-f2e7-4eea-a676-ebc00e6d6811",
+  "client_id" : "4dc7d3ec-cbb7-4265-a42c-a370ec6b51cd",
   "authorization_user_agent" : "DEFAULT",
-  "redirect_uri" : "msauth://com.example.recorder/h8CU%2B6EM%2B5Pq2B3fm8Hwvw0ioas%3D",
-  "account_mode" : "SINGLE",
+  "redirect_uri" : "msauth://com.ahom.callrecorder/I%2BKNX6ln4QF8gZs0Zf%2FX6kSUwYw%3D",
+  "account_mode": "SINGLE",
   "broker_redirect_uri_registered": true,
-  "authorities" : [
-    {
-      "type": "AAD",
-      "audience": {
-        "type": "AzureADandPersonalMicrosoftAccount",
-        "tenant_id": "common"
+    "authorities" : [
+        {
+          "type": "AAD",
+          "audience": {
+          "type": "AzureADandPersonalMicrosoftAccount",
+          "tenant_id": "common"
+        }
       }
-    }
-  ]
+    ]
 }

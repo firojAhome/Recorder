@@ -9,8 +9,9 @@
     <color name="white">#FFFFFFFF</color>
 
     <color name="orange">#F47238</color>
-<!--    <color name="header">#131b20</color>-->
-    <color name="header">#10289B</color>
+
+<!--    <color name="header">#10289B</color>-->
+    <color name="header"> #000066</color>
         <color name="theme">#2946D3</color>
 <!--    <color name="card_color">#27363f</color>-->
     <color name="card_color">#10289B</color>
