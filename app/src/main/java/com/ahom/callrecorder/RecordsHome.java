@@ -272,9 +272,6 @@ public class RecordsHome extends AppCompatActivity {
             Toast.makeText(RecordsHome.this, "Call recording start", Toast.LENGTH_SHORT).show();
 
         } else {
-            SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
-            editor.putBoolean("value", false);
-//            checkSwitchCompact();
             Toast.makeText(this, "please accept the permission accepted", Toast.LENGTH_SHORT).show();
         }
     }

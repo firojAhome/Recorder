@@ -307,10 +307,6 @@ public class PhoneStateReceiver extends Service {
             if (!phoneNumber.equals(null)){
                 savedNumber = phoneNumber;
             }
-            Log.e("print "," mail EXTRA "+intent.getStringExtra("incoming_number"));
-            Log.e("print "," mail EXTRA "+intent.getExtras());
-            Log.e("print "," mail phoneNr "+phoneNr);
-
 
             int state = 0;
             if (stateStr.equals(TelephonyManager.EXTRA_STATE_IDLE)) {
