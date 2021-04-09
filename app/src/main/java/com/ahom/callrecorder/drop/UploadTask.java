@@ -1,6 +1,8 @@
 package com.ahom.callrecorder.drop;
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Build;
+import android.os.Environment;
 import android.util.Log;
 import com.dropbox.core.DbxException;
 import com.dropbox.core.v2.DbxClientV2;
@@ -12,6 +14,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import static android.os.Build.VERSION.SDK_INT;
+import static com.ahom.callrecorder.RecordsHome.deleteLocalFile;
 import static com.ahom.callrecorder.storage.Constant.Call_Records;
 
 public class UploadTask extends AsyncTask{
@@ -38,7 +43,7 @@ public class UploadTask extends AsyncTask{
         Log.e("dropbox date","filedate "+fileDate);
         String filePath = "/"+Call_Records+"/"+fileDate+"/";
 
-        String time = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
+        String time = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a").format(new Date());
 
         String fileName = name+" "+time;
         try {
@@ -55,6 +60,9 @@ public class UploadTask extends AsyncTask{
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        deleteLocalFile(file.getAbsolutePath());
+
         return null;
     }
     @Override

@@ -15,4 +15,6 @@
     <!--  google drive  server client id-->
     <string name="server_client_id">497527836670-dop0atulau30hc9527um519i07s4d864.apps.googleusercontent.com</string>
 
+    <string name="Allow_permission">It seems you have not allowed all permissions, we require these permissions to offer seem less experience.</string>
+
 </resources>

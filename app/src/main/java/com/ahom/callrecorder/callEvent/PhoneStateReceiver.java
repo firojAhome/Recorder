@@ -1,19 +1,19 @@
 package com.ahom.callrecorder.callEvent;
 
-import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -21,16 +21,16 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-import android.telephony.PhoneStateListener;
+import android.os.ParcelFileDescriptor;
+import android.provider.ContactsContract;
+import android.provider.MediaStore;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 
 import com.ahom.callrecorder.RecordsHome;
@@ -41,9 +41,8 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
 
+import static android.os.Build.VERSION.SDK_INT;
 import static com.ahom.callrecorder.callEvent.App.CHANNEL_ID;
 import static com.ahom.callrecorder.storage.Constant.Call_Records;
 
@@ -63,12 +62,10 @@ public class PhoneStateReceiver extends Service {
     private MediaRecorder recorder = null;
     private File tempFile;
     String callNumber, filePath, audioPath;
+    ParcelFileDescriptor parcelFileDescriptor;
     private boolean recordStarted = false;
     private static final String ACTION_IN = "android.intent.action.PHONE_STATE";
     private static final String ACTION_OUT = "android.intent.action.NEW_OUTGOING_CALL";
-    public int counter = 0;
-    private Timer timer;
-    private TimerTask timerTask;
 
     private final class ServiceHandler extends Handler {
 
@@ -184,7 +181,7 @@ public class PhoneStateReceiver extends Service {
         }
 
         callNumber = number;
-        time = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
+        time = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a").format(new Date());
 
         String file_name = number + " " + time;
         try {
@@ -203,7 +200,7 @@ public class PhoneStateReceiver extends Service {
             String sub = filePath.substring(0, filePath.length() - len) + ".mp3";
             String sub1 = filePath.substring(0, (int) (filePath.length() - 13)) + ".mp3";
             Log.e("print audio path", "" + tempFile);
-            Log.e("print audio sub", "" + sub);
+            Log.e("print audio sub", "temp" + tempFile.getAbsolutePath());
             Log.e("print audio sub", "sub1 " + sub1);
             Log.e("print audio sub", "sub len" + filePath.length());
             Log.e("print audio sub", " len" + len);
@@ -216,10 +213,13 @@ public class PhoneStateReceiver extends Service {
         recorder = new MediaRecorder();
 //                          recorder.setAudioSource(MediaRecorder.AudioSource.VOICE_CALL);
         recorder.setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION);
-        recorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
-        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+//        recorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
+//        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+
+        recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
         int len = filePath.length() - (44 + file_name.length());
-        audioPath = filePath.substring(0, filePath.length() - len) + ".mp3";
+        audioPath = filePath.substring(0, filePath.length() - len).trim() + ".mp3";
         Log.e("show phone state","audio path"+audioPath);
         recorder.setOutputFile(audioPath);
 
@@ -246,36 +246,53 @@ public class PhoneStateReceiver extends Service {
             recordStarted = false;
         }
         Log.e("show phone state","audio path"+audioPath);
-        if (audioPath != null) {
+        if (audioPath != null || parcelFileDescriptor != null) {
             shareInStorage();
         }
     }
 
     private void shareInStorage() {
+
         Log.e("check ", "storage" + Preferences.getRadioIndex(getApplicationContext(), "radioIndex"));
         String prefToken = Preferences.getDropBoxAccessToken(getApplicationContext(), "Drop_Box_Access_Token");
         switch (Preferences.getRadioIndex(getApplicationContext(), "radioIndex")) {
             case 0:
+                String folderName = callNumber + " " + time;
                 GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
                 if (acct != null) {
-                    String folderName = callNumber + " " + time;
-                    recordsHome.startDriveStorage(getApplicationContext(), folderName, audioPath);
+                    if (SDK_INT >= Build.VERSION_CODES.Q) {
+                        recordsHome.startDriveStorage(getApplicationContext(), folderName, String.valueOf(parcelFileDescriptor));
+                    }else {
+                        recordsHome.startDriveStorage(getApplicationContext(), folderName, audioPath);
+                    }
                 }
                 break;
+
             case 1:
                 if (prefToken != null) {
-                    recordsHome.storeInDropBox(getApplicationContext(), callNumber, audioPath, prefToken);
+                    if (SDK_INT >= Build.VERSION_CODES.Q) {
+                        recordsHome.storeInDropBox(getApplicationContext(), callNumber, String.valueOf(parcelFileDescriptor), prefToken);
+                    }else {
+                        recordsHome.storeInDropBox(getApplicationContext(), callNumber, audioPath, prefToken);
+                    }
                 }
                 break;
+
             case 2:
                 Log.e("check ", "log 3");
                 if (Preferences.isOneDriveLogin(this, "Is_One_DriveLogIn")) {
-                    String folderTime = new SimpleDateFormat("_dd-MM-yyyy_hh_mm_ss").format(new Date());
+                    String folderTime = new SimpleDateFormat("_dd-MMM-yyyy_hh.mm.ssa").format(new Date());
 //                    String s = URLEncoder.encode(folderTime,"UTF-8");
                     String oneDriveFileName = callNumber + folderTime + ".mp3".trim();
-                    recordsHome.silentOneDriveStorage(getApplicationContext(), oneDriveFileName, audioPath);
                     Log.e("show phone state","audio path"+audioPath);
+                    if (SDK_INT >= Build.VERSION_CODES.Q) {
+                        Log.e("show phone state","audio storage path"+String.valueOf(parcelFileDescriptor));
+                        recordsHome.silentOneDriveStorage(getApplicationContext(), oneDriveFileName, String.valueOf(parcelFileDescriptor));
+                    }else {
+                        recordsHome.silentOneDriveStorage(getApplicationContext(), oneDriveFileName, audioPath);
+                    }
                 }
+
                 break;
             case 3:
                 break;
@@ -302,22 +319,23 @@ public class PhoneStateReceiver extends Service {
 
             Bundle bundle = intent.getExtras();
             String phoneNr= bundle.getString("incoming_number");
+            Log.e("show phone number",""+phoneNr);
 
-            String phoneNumber = intent.getStringExtra("incoming_number");
-            if (!phoneNumber.equals(null)){
-                savedNumber = phoneNumber;
-            }
+            savedNumber = intent.getStringExtra("incoming_number");
+            String contact = getContactName(savedNumber, context);
+
+            Log.e("show contact name","call state"+contact);
 
             int state = 0;
             if (stateStr.equals(TelephonyManager.EXTRA_STATE_IDLE)) {
                 state = TelephonyManager.CALL_STATE_IDLE;
                 Log.e("looper","looper event idle"+state);
-                stopRecording();
+                onCallStateChanged(context, state, contact);
 
             } else if (stateStr.equals(TelephonyManager.EXTRA_STATE_OFFHOOK)) {
                 state = TelephonyManager.CALL_STATE_OFFHOOK;
                 Log.e("looper","looper event hook"+state);
-                onCallStateChanged(context, state, savedNumber);
+                onCallStateChanged(context, state, contact);
 
             } else if (stateStr.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
                 state = TelephonyManager.CALL_STATE_RINGING;
@@ -338,30 +356,38 @@ public class PhoneStateReceiver extends Service {
                     String dateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
                     isIncoming = true;
                     callStartTime = new Date();
-                    savedNumber = number;
-                    onIncomingCallReceived(context, savedNumber, callStartTime);
-                    startRecording(savedNumber,callStartTime);
+                    onIncomingCallReceived(context, number, callStartTime);
+                    if (SDK_INT >= Build.VERSION_CODES.Q) {
+                        startCallRecording(number,callStartTime);
+                    }else {
+                        startRecording(number,callStartTime);
+                    }
                     break;
 
                 case TelephonyManager.CALL_STATE_OFFHOOK:
                     if(lastState != TelephonyManager.CALL_STATE_RINGING){
                         isIncoming = false;
                         callStartTime = new Date();
-                        onOutgoingCallStarted(context, savedNumber, callStartTime);
-                        startRecording(savedNumber, callStartTime);
+                        onOutgoingCallStarted(context, number, callStartTime);
+
+                            if (SDK_INT >= Build.VERSION_CODES.Q) {
+                                startCallRecording(number,callStartTime);
+                            }else {
+                                startRecording(number,callStartTime);
+                            }
                         }
                     break;
                 case TelephonyManager.CALL_STATE_IDLE:
                     if(lastState == TelephonyManager.CALL_STATE_RINGING){
                         //Ring but no pickup-  a miss
-                        onMissedCall(context, savedNumber, callStartTime);
+                        onMissedCall(context, number, callStartTime);
                     }
                     else if(isIncoming){
-                        onIncomingCallEnded(context, savedNumber, callStartTime, new Date());
+                        onIncomingCallEnded(context, number, callStartTime, new Date());
                         stopRecording();
                     }
                     else{
-                        onOutgoingCallEnded(context, savedNumber, callStartTime, new Date());
+                        onOutgoingCallEnded(context, number, callStartTime, new Date());
                         stopRecording();
                     }
                     break;
@@ -429,15 +455,97 @@ public class PhoneStateReceiver extends Service {
         }
     }
 
+
+
+    //method to retrieve contact name
+        private String getContactName(String number, Context context) {
+            String contactName = null;
+
+            // // define the columns I want the query to return
+            String[] projection = new String[] {
+                    ContactsContract.PhoneLookup.DISPLAY_NAME,
+                    ContactsContract.PhoneLookup.NUMBER,
+                    ContactsContract.PhoneLookup.HAS_PHONE_NUMBER };
+
+            // encode the phone number and build the filter URI
+            Uri contactUri = Uri.withAppendedPath(
+                    ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                    Uri.encode(number));
+
+            // query time
+            Cursor cursor = context.getContentResolver().query(contactUri,
+                    projection, null, null, null);
+            // querying all contacts = Cursor cursor =
+            // context.getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
+            // projection, null, null, null);
+
+            if (cursor.moveToFirst()) {
+                contactName = cursor.getString(cursor
+                        .getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
+                Log.e("show number cursor","get contact "+number);
+                Log.e("show name cursor","get contact "+contactName);
+            }
+            cursor.close();
+
+            if (contactName == null){
+                return number;
+            }
+            return contactName;
+
+//            return contactNumber.equals(null) ? number : contactName;
+        }
+
+
+
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    private void startCallRecording(String number, Date date) {
+        try{
+            Uri audiouri;
+
+//            ParcelFileDescriptor file;
+            callNumber = number;
+            String fileDate = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
+            time = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss ").format(new Date());
+            String file_name = number + " " + time;
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Audio.Media.DISPLAY_NAME, file_name);
+            values.put(MediaStore.Audio.Media.DATE_ADDED, (int) (System.currentTimeMillis() / 1000));
+            values.put(MediaStore.Audio.Media.MIME_TYPE, "audio/mpeg");
+            values.put(MediaStore.Audio.Media.RELATIVE_PATH, "Music/Call Records/"+fileDate+"/");
+            audiouri = getContentResolver().insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values);
+            parcelFileDescriptor = getContentResolver().openFileDescriptor(audiouri, "w");
+            if (parcelFileDescriptor != null) {
+                recorder = new MediaRecorder();
+                recorder.setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION);
+//                recorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
+//                recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+                recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+                recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+
+                recorder.setOutputFile(parcelFileDescriptor.getFileDescriptor());
+                recorder.setAudioChannels(1);
+                recorder.prepare();
+                recorder.start();
+
+                String s = String.valueOf(parcelFileDescriptor.getFileDescriptor());
+                Log.e("show file","media path"+s);
+//                recorder.setOutputFile(mediaFilePath);
+            }
+        }catch(IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
     @Override
     public void onDestroy() {
-
-
 //        stopForegroundService();
 //        LocalBroadcastManager.getInstance(this).unregisterReceiver(new CallReceiver());
 //        getApplicationContext().unregisterReceiver(new CallReceiver());
         super.onDestroy();
     }
+
 
 //    https://github.com/judemanutd/AutoStarter  .../autostart permission
 }

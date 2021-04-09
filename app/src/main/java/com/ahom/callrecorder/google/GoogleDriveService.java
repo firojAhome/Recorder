@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.util.Pair;
@@ -26,6 +28,8 @@ import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
+import static com.ahom.callrecorder.RecordsHome.deleteLocalFile;
 
 
 public class GoogleDriveService {
@@ -134,6 +138,9 @@ public class GoogleDriveService {
                     .execute();
             System.out.println("File ID: " + file.getId());
 
+            // for delete local file
+
+            deleteLocalFile(absolutePath);
             return file.getId();
         });
     }
