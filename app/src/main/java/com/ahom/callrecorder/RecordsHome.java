@@ -14,6 +14,7 @@ import android.Manifest;
 import android.accounts.Account;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Service;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -24,9 +25,11 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RadioButton;
@@ -88,6 +91,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
 import static android.os.Build.VERSION.SDK_INT;
 import static com.ahom.callrecorder.storage.Constant.Call_Records;
 
@@ -139,16 +143,15 @@ public class RecordsHome extends AppCompatActivity {
 
         switch (requestCode) {
             case REQUEST_RECORD_AUDIO_PERMISSION:
-                if (SDK_INT >= Build.VERSION_CODES.Q) {
+                if (SDK_INT >= Build.VERSION_CODES.R) {
                     Environment.isExternalStorageManager();
-                    return;
                 }
                 permissionToRecordAccepted = grantResults[5] == PackageManager.PERMISSION_GRANTED;
                 break;
         }
-        if (!permissionToRecordAccepted) finish();
+//        if (!permissionToRecordAccepted) finish()
         checkSwitchCompact();
-        Log.e("show ","permission status");
+
 
     }
 
@@ -161,7 +164,7 @@ public class RecordsHome extends AppCompatActivity {
 
         mSingAccountClint(this);
 
-        Log.e("print one driv",""+mSingleAccountApp);
+        Log.e("print one drive",""+mSingleAccountApp);
         contextOfApplication = getApplicationContext();
         //permission
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
@@ -194,6 +197,7 @@ public class RecordsHome extends AppCompatActivity {
                 }
             }
         });
+
     }
 
     private boolean checkPermissionAllow() {
@@ -219,13 +223,13 @@ public class RecordsHome extends AppCompatActivity {
                         ActivityCompat.shouldShowRequestPermissionRationale(RecordsHome.this,Manifest.permission.READ_CONTACTS) &&
                         ActivityCompat.shouldShowRequestPermissionRationale(RecordsHome.this,Manifest.permission.READ_CALL_LOG) &&
                         ActivityCompat.shouldShowRequestPermissionRationale(RecordsHome.this,Manifest.permission.RECORD_AUDIO)){
-                    Log.e("shcekljalfj","check status");
+
                     requestPermissions(permissions,REQUEST_RECORD_AUDIO_PERMISSION);
+
                 }else {
                     displayNeverAskAgainDialog();
                 }
             }
-            Log.e("shwo 2","check status");
             return false;
         }
 
@@ -235,7 +239,7 @@ public class RecordsHome extends AppCompatActivity {
     private void displayNeverAskAgainDialog() {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(RecordsHome.this);
-        builder.setMessage("We need to allowed all permission for performing necessary task. Please permit the permission through "
+        builder.setMessage("We need to allow all permission for performing necessary task. Please permit the permission through "
                 + "Settings screen.\n\nSelect Permissions -> Enable permission");
         builder.setCancelable(false);
         builder.setPositiveButton("Permit Manually", new DialogInterface.OnClickListener() {
@@ -279,6 +283,7 @@ public class RecordsHome extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        checkSwitchCompact();
         if (DROPBOX_SIGNIN){
             getAccessToken();
             Log.e("get drop box","access token");
@@ -297,8 +302,8 @@ public class RecordsHome extends AppCompatActivity {
             if (dropbox_toast){
                 Toast.makeText(RecordsHome.this, "DropBox log in successfully", Toast.LENGTH_SHORT).show();
                 dropbox_toast = false;
+                progressBar.setVisibility(View.GONE);
             }
-            progressBar.setVisibility(View.GONE);
         }
     }
 
@@ -314,14 +319,45 @@ public class RecordsHome extends AppCompatActivity {
 
             relative_permission.setVisibility(View.VISIBLE);
             switchCompat.setClickable(false);
-            Log.e("chec ","switch comppact");
+
             return;
         }
 
-        Log.e("chec ","switch comppact1");
+        //
         SharedPreferences sharedPreferences = getSharedPreferences("save", MODE_PRIVATE);
         switchCompat.setChecked(sharedPreferences.getBoolean("value", true));
-        switchCompat.setOnClickListener(new View.OnClickListener() {
+        switchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked){
+                    SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
+                    Preferences.setServiceStart(RecordsHome.this,"service",true);
+                    editor.putBoolean("value", true);
+                    startService();
+                    editor.apply();
+                    Toast.makeText(RecordsHome.this, "Call recording on", Toast.LENGTH_SHORT).show();
+                    recording_layout.setBackgroundResource(R.drawable.orange_card);
+                    TextView switchLabel = (TextView) findViewById(R.id.recoroding_label);
+                    switchLabel.setText("Recording on");
+                } else {
+                    SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
+                    editor.putBoolean("value", false);
+                    switchCompat.setChecked(false);
+                    Preferences.setServiceStart(RecordsHome.this,"service",false);
+                    Toast.makeText(RecordsHome.this, "Call recording off", Toast.LENGTH_SHORT).show();
+                    editor.apply();
+                    stopService();
+
+                    recording_layout.setBackgroundResource(R.drawable.inactive_orange_card);
+                    TextView switchLabel = (TextView) findViewById(R.id.recoroding_label);
+                    switchLabel.setText("Recording off");
+                }
+            }
+        });
+
+
+/*        switchCompat.setOnClickListener(new View.OnClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onClick(View v) {
@@ -331,7 +367,6 @@ public class RecordsHome extends AppCompatActivity {
                     editor.putBoolean("value", true);
                     startService();
                     editor.apply();
-
                     Log.e("chec ","switch comppact2 ");
                     recording_layout.setBackgroundResource(R.drawable.orange_card);
                     TextView switchLabel = (TextView) findViewById(R.id.recoroding_label);
@@ -351,7 +386,7 @@ public class RecordsHome extends AppCompatActivity {
                     switchLabel.setText("Recording off");
                 }
             }
-        });
+        });*/
 
         if(switchCompat.isChecked()){
             Preferences.setServiceStart(RecordsHome.this,"service",true);
@@ -721,6 +756,7 @@ public class RecordsHome extends AppCompatActivity {
 
                     Preferences.checkedDriveButton(RecordsHome.this,"Is_Clicked",true);
                     Preferences.setRadioIndex(getApplicationContext(),"radioIndex",0);
+                    Toast.makeText(RecordsHome.this, "Google Drive login successfully", Toast.LENGTH_SHORT).show();
                     Log.e("login successfully","google drive");
                     setChecked();
                     query(RecordsHome.this);
@@ -753,8 +789,6 @@ public class RecordsHome extends AppCompatActivity {
                                 case "Call Records":
                                     Preferences.setDrviefolderId(context, "Google_Drive_Folder_Id", drivList.get(i + 1).toString());
                                     Log.e("check folder name "," "+arrayListName);
-
-                                    Toast.makeText(context, "Google Drive login successfully", Toast.LENGTH_SHORT).show();
                                     break;
                             }
 
@@ -891,7 +925,6 @@ public class RecordsHome extends AppCompatActivity {
                     @Override
                     public void onError(MsalException exception) {
                         Log.e("message","errer Exception"+exception);
-                        Toast.makeText(context, "One drive login exception", Toast.LENGTH_SHORT).show();
                         progressBar.setVisibility(View.GONE);
                     }
                 });
@@ -916,7 +949,7 @@ public class RecordsHome extends AppCompatActivity {
         AsyncTaskRunner runner = new AsyncTaskRunner(context,fileName,filePath);
         String sleepTime = String.valueOf(1);
         runner.execute(sleepTime);
-
+//        runner.execute();
 
     }
 
@@ -942,9 +975,9 @@ public class RecordsHome extends AppCompatActivity {
         @Override
         protected String doInBackground(String... strings) {
 
-            try {
+           try {
                 String[] params = new String[0];
-                int time = 1*1000;
+                int time = 1000;
                 Thread.sleep(time);
                 resp = "Slept for " + params[0] + " seconds";
             } catch (InterruptedException e) {
@@ -954,6 +987,12 @@ public class RecordsHome extends AppCompatActivity {
                 e.printStackTrace();
                 resp = e.getMessage();
             }
+//            new Handler().postDelayed(new Runnable() {
+//                @Override
+//                public void run() {
+//
+//                }
+//            }, 2000);
             mSingleAccountApp.acquireTokenSilentAsync(SCOPES, AUTHORITY, getAuthSilentCallback(asyncContext,asyncFileName,asyncFilePath));
             return resp;
         }
@@ -1005,7 +1044,7 @@ public class RecordsHome extends AppCompatActivity {
                 Log.d("AUTH", String.format("Access token: %s", token));
 
                 saveDataInOneDrive(context,fileName,filePath);
-                deleteLocalFile(filePath);
+
             }
             @Override
             public void onError(MsalException exception) {
@@ -1114,7 +1153,7 @@ public class RecordsHome extends AppCompatActivity {
                     @Override
                     public void onResponse(String response) {
                         Log.d ("PAST QUOTES SAVE", "Created file on server"+response);
-
+                        deleteLocalFile(filePath);
                     }
                 },
                 new Response.ErrorListener() {
@@ -1158,7 +1197,9 @@ public class RecordsHome extends AppCompatActivity {
         // for delete local file
         java.io.File fdelete = new java.io.File(filePath);
         if (fdelete.exists()) {
-            if (SDK_INT >= Build.VERSION_CODES.Q) {
+            if (SDK_INT >= Build.VERSION_CODES.R) {
+                fdelete.delete();
+                System.out.println("file Deleted new version:" + filePath);
                 return;
             }
             if (fdelete.delete()) {
@@ -1180,8 +1221,12 @@ public class RecordsHome extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+
+        if (progressBar.getVisibility() == View.VISIBLE){
+            progressBar.setVisibility(View.GONE);
+            return;
+        }
         super.onBackPressed();
-        progressBar.setVisibility(View.GONE);
     }
 
 }

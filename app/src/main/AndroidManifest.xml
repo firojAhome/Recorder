@@ -75,7 +75,7 @@
         <service
             android:name="com.ahom.callrecorder.callEvent.PhoneStateReceiver"
             android:enabled="true"
-            android:exported="false"
+            android:exported="true"
             android:foregroundServiceType="microphone">
 
             <intent-filter>
@@ -83,13 +83,9 @@
             </intent-filter>
 
             <intent-filter>
-                <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
-            </intent-filter>
-
-            <intent-filter>
-                <category android:name="com.example.autostart.CATEGORY_AUTOSTART"/>
-                <action android:name="com.example.autostart.ACTION_IMPLICIT_BROADCAST"/>
-                <action android:name="com.example.autostart.ACTION_EXPLICIT_BROADCAST"/>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLE_REQUESTED" />
             </intent-filter>
 
         </service>

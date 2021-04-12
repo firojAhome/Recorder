@@ -139,8 +139,8 @@ public class GoogleDriveService {
             System.out.println("File ID: " + file.getId());
 
             // for delete local file
-
             deleteLocalFile(absolutePath);
+
             return file.getId();
         });
     }

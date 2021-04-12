@@ -41,15 +41,13 @@ public class UploadTask extends AsyncTask{
 
         String fileDate = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
         Log.e("dropbox date","filedate "+fileDate);
-        String filePath = "/"+Call_Records+"/"+fileDate+"/";
+//        String filePath = "/"+Call_Records+"/"+fileDate+"/";
+        String filePath = "/"+fileDate+"/";
 
-        String time = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a").format(new Date());
-
-        String fileName = name+" "+time;
         try {
             // Upload to Dropbox
             InputStream inputStream = new FileInputStream(file);
-                  dbxClient.files().uploadBuilder(filePath + fileName+".mp3")
+                  dbxClient.files().uploadBuilder(filePath + name+".mp3")
                             .withMode(WriteMode.ADD)
                             .uploadAndFinish(inputStream);
                     Log.d("Upload Status", "Success");
