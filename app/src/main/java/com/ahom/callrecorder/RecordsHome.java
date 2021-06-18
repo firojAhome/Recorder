@@ -15,20 +15,29 @@ import android.accounts.Account;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Service;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.ParcelFileDescriptor;
+import android.os.PowerManager;
+import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -81,6 +90,7 @@ import com.microsoft.identity.client.exception.MsalException;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -91,7 +101,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
+import static android.media.AudioManager.MODE_IN_CALL;
+import static android.media.AudioManager.MODE_NORMAL;
+import static android.media.AudioManager.STREAM_VOICE_CALL;
 import static android.os.Build.VERSION.SDK_INT;
 import static com.ahom.callrecorder.storage.Constant.Call_Records;
 
@@ -130,9 +144,12 @@ public class RecordsHome extends AppCompatActivity {
     private boolean permissionToRecordAccepted = false;
 
     private String[] permissions = {Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.READ_PHONE_STATE,Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.READ_CONTACTS,Manifest.permission.READ_CALL_LOG};
+            Manifest.permission.READ_PHONE_STATE,Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_CALL_LOG,
+            Manifest.permission.READ_CONTACTS,Manifest.permission.READ_CALL_LOG, Manifest.permission.FOREGROUND_SERVICE};
 
+    MediaRecorder mediaRecorder = null;
+
+    Boolean recordStarted = false;
     //drive service helper
     public static Context contextOfApplication;
     String serverClientId = "497527836670-dop0atulau30hc9527um519i07s4d864.apps.googleusercontent.com";
@@ -146,12 +163,11 @@ public class RecordsHome extends AppCompatActivity {
                 if (SDK_INT >= Build.VERSION_CODES.R) {
                     Environment.isExternalStorageManager();
                 }
-                permissionToRecordAccepted = grantResults[5] == PackageManager.PERMISSION_GRANTED;
+                permissionToRecordAccepted = grantResults[4] == PackageManager.PERMISSION_GRANTED;
                 break;
         }
 //        if (!permissionToRecordAccepted) finish()
         checkSwitchCompact();
-
 
     }
 
@@ -161,10 +177,8 @@ public class RecordsHome extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_record_home);
 
-
         mSingAccountClint(this);
 
-        Log.e("print one drive",""+mSingleAccountApp);
         contextOfApplication = getApplicationContext();
         //permission
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
@@ -198,6 +212,17 @@ public class RecordsHome extends AppCompatActivity {
             }
         });
 
+        if (SDK_INT >= Build.VERSION_CODES.M) {
+            String packageName = this.getPackageName();
+            PowerManager pm = (PowerManager) this.getSystemService(Context.POWER_SERVICE);
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
+                intent.setData(Uri.parse("package:" + packageName));
+                this.startActivity(intent);
+            }
+        }
     }
 
     private boolean checkPermissionAllow() {
@@ -222,6 +247,7 @@ public class RecordsHome extends AppCompatActivity {
                         ActivityCompat.shouldShowRequestPermissionRationale(RecordsHome.this,Manifest.permission.READ_EXTERNAL_STORAGE) &&
                         ActivityCompat.shouldShowRequestPermissionRationale(RecordsHome.this,Manifest.permission.READ_CONTACTS) &&
                         ActivityCompat.shouldShowRequestPermissionRationale(RecordsHome.this,Manifest.permission.READ_CALL_LOG) &&
+                        ActivityCompat.shouldShowRequestPermissionRationale(RecordsHome.this,Manifest.permission.RECORD_AUDIO) &&
                         ActivityCompat.shouldShowRequestPermissionRationale(RecordsHome.this,Manifest.permission.RECORD_AUDIO)){
 
                     requestPermissions(permissions,REQUEST_RECORD_AUDIO_PERMISSION);
@@ -237,7 +263,6 @@ public class RecordsHome extends AppCompatActivity {
 
 
     private void displayNeverAskAgainDialog() {
-
         AlertDialog.Builder builder = new AlertDialog.Builder(RecordsHome.this);
         builder.setMessage("We need to allow all permission for performing necessary task. Please permit the permission through "
                 + "Settings screen.\n\nSelect Permissions -> Enable permission");
@@ -286,7 +311,6 @@ public class RecordsHome extends AppCompatActivity {
         checkSwitchCompact();
         if (DROPBOX_SIGNIN){
             getAccessToken();
-            Log.e("get drop box","access token");
         }
     }
 
@@ -334,12 +358,12 @@ public class RecordsHome extends AppCompatActivity {
                     SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
                     Preferences.setServiceStart(RecordsHome.this,"service",true);
                     editor.putBoolean("value", true);
-                    startService();
                     editor.apply();
                     Toast.makeText(RecordsHome.this, "Call recording on", Toast.LENGTH_SHORT).show();
                     recording_layout.setBackgroundResource(R.drawable.orange_card);
                     TextView switchLabel = (TextView) findViewById(R.id.recoroding_label);
                     switchLabel.setText("Recording on");
+                    startService();
                 } else {
                     SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
                     editor.putBoolean("value", false);
@@ -405,7 +429,6 @@ public class RecordsHome extends AppCompatActivity {
 
 
     private void startService() {
-
         Intent intent = new Intent(RecordsHome.this, PhoneStateReceiver.class);
         startService(intent);
         relative_permission.setVisibility(View.GONE);
@@ -805,6 +828,7 @@ public class RecordsHome extends AppCompatActivity {
                     .addOnFailureListener(exception -> Log.e(TAG, "Unable to query files.", exception));
         }
     }
+
 
 //    private void createFolder() {
 //        String driveFolderId = Preferences.getDriveFolderId(this, "Google_Drive_Folder_Id");
@@ -1229,4 +1253,117 @@ public class RecordsHome extends AppCompatActivity {
         super.onBackPressed();
     }
 
+    private void startRecording() {
+
+        String fileDate = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
+        File dateDir = new File(Environment.getExternalStorageDirectory(), "/" + Call_Records + "/" + fileDate);
+        File sampleDir = new File(Environment.getExternalStorageDirectory(), "/" + Call_Records + "");
+        if (!sampleDir.exists()) {
+            sampleDir.mkdir();
+        }
+        if (!dateDir.exists()) {
+            dateDir.mkdir();
+        }
+
+        String time = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a").format(new Date());
+
+        File tempFile = null;
+        String file_name = time;
+        try {
+            tempFile = File.createTempFile(file_name, ".mp3", dateDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        mediaRecorder = new MediaRecorder();
+
+        //        recorder.setAudioSource(MediaRecorder.AudioSource.VOICE_CALL);
+        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION);
+        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+        mediaRecorder.setAudioEncodingBitRate(96000);
+        mediaRecorder.setAudioSamplingRate(44100);
+
+
+//        recorder.setOnInfoListener((MediaRecorder.OnInfoListener) applicationContext);
+//        recorder.setOnErrorListener((MediaRecorder.OnErrorListener) applicationContext);
+        String audioPath = tempFile.getAbsolutePath();
+//        int len = filePath.length() - (44 + file_name.length());
+//        String audioPath = filePath.substring(0, filePath.length() - len).trim() + ".mp3";
+        Log.e("show phone state","audio path"+audioPath);
+        mediaRecorder.setOutputFile(audioPath);
+        mediaRecorder.setAudioChannels(1);
+
+        try {
+            mediaRecorder.prepare();
+            mediaRecorder.start();
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+    private void stopRecording() {
+        if (recordStarted) {
+            try {
+                mediaRecorder.stop();
+                mediaRecorder.release();
+                mediaRecorder = null;
+            } catch (IllegalStateException e) {
+                e.printStackTrace();
+            }
+
+            recordStarted = false;
+        }
+
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.R)
+    private void startCallRecording() {
+
+        ParcelFileDescriptor parcelFileDescriptor;
+        try{
+            Uri audiouri;
+//            ParcelFileDescriptor file;
+
+            String fileDate = new SimpleDateFormat("dd-MM-yyyy").format(new Date());
+            String  time = new SimpleDateFormat("dd-MM-yyyy hh_mm_ssa").format(new Date());
+            String newDeviceFileName = time;
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Audio.Media.DISPLAY_NAME, newDeviceFileName);
+            values.put(MediaStore.Audio.Media.DATE_ADDED, (int) (System.currentTimeMillis() / 1000));
+            values.put(MediaStore.Audio.Media.MIME_TYPE, "audio/mpeg");
+            values.put(MediaStore.Audio.Media.RELATIVE_PATH, "Music/Call Records/"+fileDate+"/");
+            audiouri = getContentResolver().insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values);
+            parcelFileDescriptor = getContentResolver().openFileDescriptor(audiouri, "w");
+
+            if (parcelFileDescriptor != null) {
+                mediaRecorder = new MediaRecorder();
+//                recorder.setPrivacySensitive(false);
+                mediaRecorder.setAudioSamplingRate(44100);
+                mediaRecorder.setAudioEncodingBitRate(96000);
+                mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+                mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+                mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+
+                mediaRecorder.setOutputFile(parcelFileDescriptor.getFileDescriptor());
+
+
+                mediaRecorder.setAudioChannels(1);
+                mediaRecorder.prepare();
+                mediaRecorder.start();
+
+            }
+
+        }catch(IOException e) {
+            e.printStackTrace();
+        }
+
+        recordStarted = true;
+    }
+
+//    A written explanation telling Google why you need access to sensitive and/or restricted user data
+//    A YouTube video showing how you plan to use the Google user data you get from scopes
 }

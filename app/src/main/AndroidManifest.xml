@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.ahom.callrecorder">
 
-    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -11,58 +10,55 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
-    <uses-permission android:name="android.permission.READ_CALL_LOG"/>
-
-    <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="android.permission.WRITE_CALL_LOG" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permissions.READ_PHONE_NUMBERS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
-
-<!--    key store details key-0 , pass - ahom@123-->
-
+<!--    password : ahom@recorder, Key0-->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:networkSecurityConfig="@xml/network_security_config"
+        android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Recorder"
         android:usesCleartextTraffic="true"
-        android:requestLegacyExternalStorage="true"
+        android:allowAudioPlaybackCapture="true"
+        android:networkSecurityConfig="@xml/network_security_config"
         tools:replace="android:theme">
+        <activity
+            android:name=".RecordsHome"
+            android:usesCleartextTraffic="true"/>
 
-        <activity android:name="com.ahom.callrecorder.RecordsHome"
-            android:usesCleartextTraffic="true">
-
-        </activity>
-
-        <activity android:name="com.ahom.callrecorder.MainActivity">
+        <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
         </activity>
-
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyA5DWeIDnFD0VCsLym8Oy4oZAs6zzREhDY"/>
-
-
-        <!-- Dropbox AuthActivity -->
+            android:value="AIzaSyA5DWeIDnFD0VCsLym8Oy4oZAs6zzREhDY" /> <!-- Dropbox AuthActivity -->
         <activity
             android:name="com.dropbox.core.android.AuthActivity"
             android:configChanges="orientation|keyboard"
             android:launchMode="singleTask">
             <intent-filter>
+
                 <!-- Insert your app key after “db-  ...” -->
                 <data android:scheme="db-abx7y6xhqo06wp4" />
+
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
         </activity>
@@ -71,46 +67,37 @@
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
 
-
         <service
-            android:name="com.ahom.callrecorder.callEvent.PhoneStateReceiver"
+            android:name=".callEvent.PhoneStateReceiver"
             android:enabled="true"
             android:exported="true"
-            android:foregroundServiceType="microphone">
-
+            android:foregroundServiceType="microphone|mediaProjection">
             <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
-
             <intent-filter>
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
                 <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
                 <action android:name="android.app.action.DEVICE_ADMIN_DISABLE_REQUESTED" />
             </intent-filter>
-
         </service>
-
 
         <uses-library
             android:name="org.apache.http.legacy"
-            android:required="false" />
-
-        <!-- one drive -->
+            android:required="false" /> <!-- one drive -->
         <activity android:name="com.microsoft.identity.client.BrowserTabActivity">
-
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                    <data
-                        android:host="com.ahom.callrecorder"
-                        android:path="/I+KNX6ln4QF8gZs0Zf/X6kSUwYw="
-                        android:scheme="msauth"/>
+
+                <data
+                    android:host="com.ahom.callrecorder"
+                    android:path="/I+KNX6ln4QF8gZs0Zf/X6kSUwYw="
+                    android:scheme="msauth" />
             </intent-filter>
-
         </activity>
-
-
     </application>
 
 </manifest>

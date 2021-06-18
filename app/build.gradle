@@ -103,6 +103,7 @@ dependencies {
     implementation 'com.android.volley:volley:1.1.1'
 
     //library for auto start permission
-    implementation 'com.github.judemanutd:autostarter:1.0.8'
+//    implementation 'com.github.judemanutd:autostarter:1.0.8'
+
 
 }
