@@ -1,9 +1,7 @@
 package com.example.recorder.callService;
 
-import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
 import static android.os.Build.VERSION.SDK_INT;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -15,15 +13,8 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Color;
-import android.media.AudioAttributes;
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.AudioRecord;
 import android.media.MediaRecorder;
-import android.media.session.MediaSession;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -42,17 +33,18 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 
 import com.example.recorder.MainActivity;
 import com.example.recorder.R;
 import com.example.recorder.utils.Constant;
+import com.example.recorder.utils.Utils;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 public class PhoneStateReceiver extends Service {
 
@@ -76,7 +68,8 @@ public class PhoneStateReceiver extends Service {
     boolean isPause = true;
     String recordingPause = "Recording Pause";
     String recordingStart = "Recording Start";
-
+    int seconds = 0;
+    Handler handler = new Handler();
 
     public PhoneStateReceiver() {
 
@@ -276,6 +269,7 @@ public class PhoneStateReceiver extends Service {
 
     public void stopRecording(Context context) {
         Log.e("shor recorder ", "stop recording id " + recorder);
+
         if (recorder != null){
             try {
                 recorder.stop();
@@ -334,12 +328,14 @@ public class PhoneStateReceiver extends Service {
             String action = intent.getExtras().getString("actionname");
 
             Log.e("show the ","broadcast action  "+action);
-            if (action == "PAUSE"){
+            if (action.equals("PAUSE")){
                 if (isPause){
                     stopRecording(context);
                     CreateNotification.createNotification(context,R.drawable.resume_button,recordingPause);
+                    Utils.setMicrophoneStatus(context,false);
                     isPause = false;
                 } else {
+                    Utils.setMicrophoneStatus(context,true);
                     CreateNotification.createNotification(context,R.drawable.pause_button,recordingStart);
                     if (SDK_INT >= Build.VERSION_CODES.Q) {
                         startCallRecordingNewDevice(context, "pause");
@@ -409,14 +405,6 @@ public class PhoneStateReceiver extends Service {
                         callStartTime = new Date();
                         onIncomingCallReceived(context, number, callStartTime);
 
-                        CreateNotification.createNotification(context,R.drawable.pause_button,recordingStart);
-                        if (SDK_INT >= Build.VERSION_CODES.Q) {
-                            startCallRecordingNewDevice(context, number);
-                        } else {
-                            startRecordingOLdDevice(context, number);
-                        }
-                        registerReceiver(broadcastReceiver,  new IntentFilter("TRACKS_TRACKS"));
-
                         break;
 
                     case TelephonyManager.CALL_STATE_OFFHOOK:
@@ -424,14 +412,6 @@ public class PhoneStateReceiver extends Service {
                             isIncoming = false;
                             callStartTime = new Date();
                             onOutgoingCallStarted(context, number, callStartTime);
-
-                            CreateNotification.createNotification(context,R.drawable.pause_button,recordingStart);
-                            if (SDK_INT >= Build.VERSION_CODES.Q) {
-                                startCallRecordingNewDevice(context, number);
-                            } else {
-                                startRecordingOLdDevice(context, number);
-                            }
-                            registerReceiver(broadcastReceiver,  new IntentFilter("TRACKS_TRACKS"));
                         }
                         break;
                     case TelephonyManager.CALL_STATE_IDLE:
@@ -441,15 +421,9 @@ public class PhoneStateReceiver extends Service {
                         }
                         else if(isIncoming){
                             onIncomingCallEnded(context, number, callStartTime, new Date());
-                            CreateNotification.createNotification(context,0,"");
-                            stopRecording(context);
-                            unregisterReceiver(broadcastReceiver);
                         }
                         else{
                             onOutgoingCallEnded(context, number, callStartTime, new Date());
-                            CreateNotification.createNotification(context,0,"");
-                            stopRecording(context);
-                            unregisterReceiver(broadcastReceiver);
                         }
                         break;
                 }
@@ -476,22 +450,28 @@ public class PhoneStateReceiver extends Service {
         @Override
         protected void onIncomingCallReceived(Context ctx, String number, Date start) {
             Log.d("onIncomingCallReceived", number + " " + start.toString());
+
+            callStart(ctx,number);
         }
 
 
         @Override
         protected void onIncomingCallEnded(Context ctx, String number, Date start, Date end) {
             Log.d("onIncomingCallEnded", number + " " + start.toString() + "\t" + end.toString());
+            callEnded(ctx);
+
         }
 
         @Override
         protected void onOutgoingCallStarted(Context ctx, String number, Date start) {
             Log.d("onOutgoingCallStarted", number + " " + start.toString());
+            callStart(ctx,number);
         }
 
         @Override
         protected void onOutgoingCallEnded(Context ctx, String number, Date start, Date end) {
             Log.d("onOutgoingCallEnded", number + " " + start.toString() + "\t" + end.toString());
+            callEnded(ctx);
         }
 
         @Override
@@ -501,46 +481,68 @@ public class PhoneStateReceiver extends Service {
     }
 
 
+    public void callStart(Context ctx,String number){
 
-
-    private void createChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(Constant.CHANNEL_ID,
-                    null, NotificationManager.IMPORTANCE_HIGH);
-
-            notificationManager = getSystemService(NotificationManager.class);
-            if (notificationManager != null) {
-                notificationManager.createNotificationChannel(channel);
-            }
+        CreateNotification.createNotification(ctx,R.drawable.pause_button,recordingStart);
+        if (SDK_INT >= Build.VERSION_CODES.Q) {
+            startCallRecordingNewDevice(ctx, number);
+        } else {
+            startRecordingOLdDevice(ctx, number);
         }
+        runTimer(ctx);
+        registerReceiver(broadcastReceiver,  new IntentFilter("TRACKS_TRACKS"));
     }
 
-    private void startForgroundService(Context context, int pauseButton, String contextText,String title) {
-
-        Intent actionActivity =  new Intent(context,MainActivity.class);
-        PendingIntent contentIntent = PendingIntent.getActivity(this,0,
-                actionActivity,0);
-
-        Intent broadcastIntent = new Intent(context,NotificationActionService.class).setAction("PAUSE");
-
-        PendingIntent actionIntent = PendingIntent.getBroadcast(context,0,
-                broadcastIntent,PendingIntent.FLAG_UPDATE_CURRENT);
-
-        NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        String channelId = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? getNotificationChannel(notificationManager) : "";
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, channelId);
-        Notification notification = notificationBuilder.setOngoing(true)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("App is running in background")
-                .setContentText(contextText)
-                .setPriority(NotificationManager.IMPORTANCE_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_SERVICE)
-                .setContentIntent(contentIntent)
-                .addAction(pauseButton,title,actionIntent)
-                .build();
-
-        startForeground(110, notification);
+    public void callEnded(Context context){
+        stopRecording(context);
+        CreateNotification.createNotification(context,0,"");
+        handler.removeCallbacksAndMessages(null);
+        unregisterReceiver(broadcastReceiver);
     }
+
+
+    private void runTimer(Context context) {
+
+        handler.post(new Runnable() {
+            @Override
+
+            public void run() {
+                int hours = seconds / 3600;
+                int minutes = (seconds % 3600) / 60;
+                int secs = seconds % 60;
+
+                String time = String
+                        .format(Locale.getDefault(),
+                                "%d:%02d:%02d", hours,
+                                minutes, secs);
+
+                if (Utils.isMicrophoneMute(context)){
+                    Log.e("recording stop","mic  mute");
+                    if (recorder != null){
+                        stopRecording(context);
+                        CreateNotification.createNotification(context,R.drawable.resume_button,recordingPause);
+                    }
+                }else{
+                    if (recorder == null){
+                            CreateNotification.createNotification(context,R.drawable.pause_button,recordingStart);
+                            if (SDK_INT >= Build.VERSION_CODES.Q) {
+                                startCallRecordingNewDevice(context, "mute");
+                            } else {
+                                startRecordingOLdDevice(context, "mute");
+                            }
+                            isPause = false;
+                    }
+                    Log.e("recording start","mic is not mute");
+                }
+                Log.e("show timer"+time,"status of sec"+seconds++);
+
+
+                handler.postDelayed(this, 1000);
+            }
+        });
+    }
+
+
 
 
     @Override

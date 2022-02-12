@@ -8,15 +8,38 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.os.Handler;
 import android.provider.Settings;
 import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 
 import java.io.File;
+import java.util.Locale;
 
 public class Utils {
 
+    public static boolean isMicrophoneMute(Context context) {
+        AudioManager audioManager = (AudioManager)
+                context.getSystemService(Context.AUDIO_SERVICE);
+        // get original mode
+        int originalMode = audioManager.getMode();
+        // change mute
+        boolean state = audioManager.isMicrophoneMute();
+        Log.e("show the ","mic state "+state);
+//        audioManager.setMicrophoneMute(state);
+        // set mode back
+//        audioManager.setMode(originalMode);
+        return state;
+    }
+
+
+    public static void setMicrophoneStatus(Context context, boolean state){
+        AudioManager audioManager = (AudioManager)
+                context.getSystemService(Context.AUDIO_SERVICE);
+
+        audioManager.setMicrophoneMute(state);
+    }
     public static boolean checkVibrationIsOn(Context context){
         boolean status = false;
         AudioManager am = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
@@ -68,19 +91,9 @@ public class Utils {
         return available;
     }
 
-    public boolean isMicrophoneMute(Context context) {
-        AudioManager audioManager = (AudioManager)
-                context.getSystemService(Context.AUDIO_SERVICE);
-        // get original mode
-        int originalMode = audioManager.getMode();
-        // change mute
-        Log.e("show the ","oriinal mode "+originalMode);
-        boolean state = audioManager.isMicrophoneMute();
-        audioManager.setMicrophoneMute(state);
-        // set mode back
-        audioManager.setMode(originalMode);
-        return state;
-    }
+
+
+
 
     public static boolean getMicrophoneAvailable(Context context) {
         MediaRecorder recorder = new MediaRecorder();
@@ -207,4 +220,6 @@ public class Utils {
         NotificationManager nMgr = (NotificationManager) ctx.getSystemService(ns);
         nMgr.cancel(notifyId);
     }
+
+
 }
