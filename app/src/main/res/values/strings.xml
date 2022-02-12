@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Recorder</string>
+
+    <string name="accessibility_service_label">Recorder</string>
+    <string name="accessibility_service_description">"Records your phone call "</string>
+
+    <string name="Allow_permission">It seems you have not allowed all permissions, we require these permissions to offer seem less experience.</string>
+
+</resources>
