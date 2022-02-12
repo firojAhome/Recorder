@@ -133,12 +133,16 @@ public class PhoneStateReceiver extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
 
+        Intent actionActivity = new Intent(this, MainActivity.class);
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
+                actionActivity, 0);
         NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         String channelId = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? getNotificationChannel(notificationManager) : "";
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelId);
         Notification notification = notificationBuilder.setOngoing(true)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle("App is running in background")
+                .setContentIntent(contentIntent)
                 .setPriority(NotificationManager.IMPORTANCE_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
                 .build();

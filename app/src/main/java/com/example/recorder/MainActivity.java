@@ -308,6 +308,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     private void recordingEnable() {
+        if (Preferences.getServiceInfo(MainActivity.this,"service")){
+            startService();
+        }
         SharedPreferences sharedPreferences = getSharedPreferences("save", MODE_PRIVATE);
         recording_switchCompat.setChecked(sharedPreferences.getBoolean("value", false));
         recording_switchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {

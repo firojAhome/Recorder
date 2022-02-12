@@ -1,6 +1,7 @@
 package com.example.recorder.utils;
 
 import android.Manifest;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
@@ -200,4 +201,10 @@ public class Utils {
 
         notificationManagerCompat.notify(FOREGROUND_SERVICE_TYPE_MICROPHONE, notification);
     }*/
+
+    public static void cancelNotification(Context ctx, int notifyId) {
+        String ns = Context.NOTIFICATION_SERVICE;
+        NotificationManager nMgr = (NotificationManager) ctx.getSystemService(ns);
+        nMgr.cancel(notifyId);
+    }
 }
